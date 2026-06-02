@@ -22,6 +22,12 @@ import {
   linesToOrderItems,
   mergeOrderItems,
 } from "./orderDraft.js";
+import {
+  loadLocalState,
+  saveLocalState,
+  saveState,
+  subscribeState,
+} from "./firebase.js";
 
 const INITIAL_ROOMS = TABLES_LAYOUT.flat().reduce((acc, table) => {
   acc[table] = [];
@@ -358,44 +364,8 @@ function UndoBar({ message, onUndo }) {
   );
 }
 
-const STORAGE_KEY = "brunholl_v1";
-
-function loadPersistedState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (data.version !== 1) return null;
-    return {
-      ordersByTable: data.ordersByTable || {},
-      roomsByTable: data.roomsByTable || INITIAL_ROOMS,
-      barQueueState: data.barQueueState || {},
-    };
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-}
-
-function savePersistedState(ordersByTable, roomsByTable, barQueueState) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        ordersByTable,
-        roomsByTable,
-        barQueueState,
-      })
-    );
-  } catch {
-    // Storage full or unavailable — silently ignore
-  }
-}
-
 function App() {
-  const persisted = useRef(loadPersistedState());
+  const local = useRef(loadLocalState());
 
   const [mode, setMode] = useState(getInitialMode);
   const [now, setNow] = useState(Date.now());
@@ -411,10 +381,10 @@ function App() {
   const [draftNoteOpenFor, setDraftNoteOpenFor] = useState(null);
   const [draftNote, setDraftNote] = useState("");
 
-  const [roomsByTable, setRoomsByTable] = useState(persisted.current?.roomsByTable ?? INITIAL_ROOMS);
-  const [ordersByTable, setOrdersByTable] = useState(persisted.current?.ordersByTable ?? INITIAL_ORDERS);
+  const [roomsByTable, setRoomsByTable] = useState(local.current?.roomsByTable ?? INITIAL_ROOMS);
+  const [ordersByTable, setOrdersByTable] = useState(local.current?.ordersByTable ?? INITIAL_ORDERS);
   const [receptionTab, setReceptionTab] = useState("active");
-  const [barQueueState, setBarQueueState] = useState(persisted.current?.barQueueState ?? {});
+  const [barQueueState, setBarQueueState] = useState(local.current?.barQueueState ?? {});
   const [undoMessage, setUndoMessage] = useState(null);
   const undoStackRef = useRef([]);
 
@@ -438,9 +408,57 @@ function App() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Refs holding latest state for snapshot comparison (no stale closures)
+  const ordersRef = useRef(ordersByTable);
+  const roomsRef = useRef(roomsByTable);
+  const barQueueRef = useRef(barQueueState);
+  ordersRef.current = ordersByTable;
+  roomsRef.current = roomsByTable;
+  barQueueRef.current = barQueueState;
+
+  // Sync to localStorage cache whenever state changes
   useEffect(() => {
-    savePersistedState(ordersByTable, roomsByTable, barQueueState);
+    saveLocalState(ordersByTable, roomsByTable, barQueueState);
   }, [ordersByTable, roomsByTable, barQueueState]);
+
+  // Push to Firestore whenever state changes
+  useEffect(() => { saveState("orders", { ordersByTable }); }, [ordersByTable]);
+  useEffect(() => { saveState("rooms", { roomsByTable }); }, [roomsByTable]);
+  useEffect(() => { saveState("barQueue", { barQueueState }); }, [barQueueState]);
+
+  // Subscribe to Firestore realtime updates — skip when data matches local state
+  useEffect(() => {
+    const unsub = subscribeState("orders", (data) => {
+      if (data?.ordersByTable) {
+        const current = JSON.stringify(ordersRef.current);
+        const incoming = JSON.stringify(data.ordersByTable);
+        if (current !== incoming) setOrdersByTable(data.ordersByTable);
+      }
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribeState("rooms", (data) => {
+      if (data?.roomsByTable) {
+        const current = JSON.stringify(roomsRef.current);
+        const incoming = JSON.stringify(data.roomsByTable);
+        if (current !== incoming) setRoomsByTable(data.roomsByTable);
+      }
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribeState("barQueue", (data) => {
+      if (data?.barQueueState) {
+        const current = JSON.stringify(barQueueRef.current);
+        const incoming = JSON.stringify(data.barQueueState);
+        if (current !== incoming) setBarQueueState(data.barQueueState);
+      }
+    });
+    return unsub;
+  }, []);
 
   const switchMode = (nextMode) => {
     setMode(nextMode);

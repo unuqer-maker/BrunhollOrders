@@ -44,6 +44,7 @@ function stateDoc(name) {
  */
 export async function saveState(name, data) {
   try {
+    console.log(`[FIRESTORE] saveState(${name}) called`);
     await setDoc(
       stateDoc(name),
       {
@@ -52,8 +53,9 @@ export async function saveState(name, data) {
       },
       { merge: true }
     );
+    console.log(`[FIRESTORE] saveState(${name}) succeeded`);
   } catch (err) {
-    console.warn(`Firestore saveState(${name}) failed:`, err);
+    console.error(`[FIRESTORE] saveState(${name}) failed:`, err);
   }
 }
 
@@ -65,12 +67,13 @@ export async function saveState(name, data) {
  * @returns {() => void} unsubscribe function
  */
 export function subscribeState(name, callback) {
+  console.log(`[FIRESTORE] subscribeState(${name}) attaching listener`);
   return onSnapshot(
     stateDoc(name),
     (snap) => {
+      console.log(`[SNAPSHOT] ${name}`, snap.exists() ? snap.data() : "no document");
       if (snap.exists()) {
         const data = snap.data();
-        // Remove metadata fields before passing to app
         const { updatedAt, ...state } = data;
         callback(state);
       } else {
@@ -78,7 +81,7 @@ export function subscribeState(name, callback) {
       }
     },
     (err) => {
-      console.warn(`Firestore subscribeState(${name}) error:`, err);
+      console.error(`[FIRESTORE] subscribeState(${name}) error:`, err);
     }
   );
 }

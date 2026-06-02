@@ -422,9 +422,9 @@ function App() {
   }, [ordersByTable, roomsByTable, barQueueState]);
 
   // Push to Firestore whenever state changes
-  useEffect(() => { saveState("orders", { ordersByTable }); }, [ordersByTable]);
-  useEffect(() => { saveState("rooms", { roomsByTable }); }, [roomsByTable]);
-  useEffect(() => { saveState("barQueue", { barQueueState }); }, [barQueueState]);
+  useEffect(() => { console.log("[WRITE] orders"); saveState("orders", { ordersByTable }); }, [ordersByTable]);
+  useEffect(() => { console.log("[WRITE] rooms"); saveState("rooms", { roomsByTable }); }, [roomsByTable]);
+  useEffect(() => { console.log("[WRITE] barQueue"); saveState("barQueue", { barQueueState }); }, [barQueueState]);
 
   // Subscribe to Firestore realtime updates — skip when data matches local state
   useEffect(() => {

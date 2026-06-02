@@ -38,17 +38,24 @@ function stateDoc(name) {
 }
 
 /**
+ * Recursively replace all undefined values with null so Firestore never rejects.
+ */
+function stripUndefined(obj) {
+  return JSON.parse(JSON.stringify(obj, (_, v) => (v === undefined ? null : v)));
+}
+
+/**
  * Save one state slice to Firestore.
  * @param {"orders"|"rooms"|"barQueue"} name
  * @param {object} data
  */
 export async function saveState(name, data) {
   try {
-    console.log(`[FIRESTORE] saveState(${name}) called`);
+    const safe = stripUndefined(data);
     await setDoc(
       stateDoc(name),
       {
-        ...data,
+        ...safe,
         updatedAt: serverTimestamp(),
       },
       { merge: true }

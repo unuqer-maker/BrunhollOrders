@@ -416,23 +416,43 @@ function App() {
   roomsRef.current = roomsByTable;
   barQueueRef.current = barQueueState;
 
+  // Flags: true when the latest state change was from a remote snapshot (not local).
+  // The write effect skips saving to Firestore when this is set — prevents echo writes.
+  const remoteOrders = useRef(false);
+  const remoteRooms = useRef(false);
+  const remoteBarQueue = useRef(false);
+
   // Sync to localStorage cache whenever state changes
   useEffect(() => {
     saveLocalState(ordersByTable, roomsByTable, barQueueState);
   }, [ordersByTable, roomsByTable, barQueueState]);
 
-  // Push to Firestore whenever state changes
-  useEffect(() => { console.log("[WRITE] orders"); saveState("orders", { ordersByTable }); }, [ordersByTable]);
-  useEffect(() => { console.log("[WRITE] rooms"); saveState("rooms", { roomsByTable }); }, [roomsByTable]);
-  useEffect(() => { console.log("[WRITE] barQueue"); saveState("barQueue", { barQueueState }); }, [barQueueState]);
+  // Push to Firestore whenever state changes — skip remote-originated changes
+  useEffect(() => {
+    if (remoteOrders.current) { remoteOrders.current = false; return; }
+    saveState("orders", { ordersByTable });
+  }, [ordersByTable]);
 
-  // Subscribe to Firestore realtime updates — skip when data matches local state
+  useEffect(() => {
+    if (remoteRooms.current) { remoteRooms.current = false; return; }
+    saveState("rooms", { roomsByTable });
+  }, [roomsByTable]);
+
+  useEffect(() => {
+    if (remoteBarQueue.current) { remoteBarQueue.current = false; return; }
+    saveState("barQueue", { barQueueState });
+  }, [barQueueState]);
+
+  // Subscribe to Firestore realtime updates — set remote flag on incoming changes
   useEffect(() => {
     const unsub = subscribeState("orders", (data) => {
       if (data?.ordersByTable) {
         const current = JSON.stringify(ordersRef.current);
         const incoming = JSON.stringify(data.ordersByTable);
-        if (current !== incoming) setOrdersByTable(data.ordersByTable);
+        if (current !== incoming) {
+          remoteOrders.current = true;
+          setOrdersByTable(data.ordersByTable);
+        }
       }
     });
     return unsub;
@@ -443,7 +463,10 @@ function App() {
       if (data?.roomsByTable) {
         const current = JSON.stringify(roomsRef.current);
         const incoming = JSON.stringify(data.roomsByTable);
-        if (current !== incoming) setRoomsByTable(data.roomsByTable);
+        if (current !== incoming) {
+          remoteRooms.current = true;
+          setRoomsByTable(data.roomsByTable);
+        }
       }
     });
     return unsub;
@@ -454,7 +477,10 @@ function App() {
       if (data?.barQueueState) {
         const current = JSON.stringify(barQueueRef.current);
         const incoming = JSON.stringify(data.barQueueState);
-        if (current !== incoming) setBarQueueState(data.barQueueState);
+        if (current !== incoming) {
+          remoteBarQueue.current = true;
+          setBarQueueState(data.barQueueState);
+        }
       }
     });
     return unsub;

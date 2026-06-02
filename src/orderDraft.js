@@ -47,13 +47,13 @@ export function linesToOrderItems(lines) {
     name: line.name,
     qty: line.qty,
     status: "NEW",
-    extras: line.extras?.length ? [...line.extras] : undefined,
-    note: line.note || undefined,
+    extras: line.extras?.length ? [...line.extras] : null,
+    note: line.note || null,
   }));
 }
 
 export function mergeOrderItems(existingItems, addedItems) {
-  const merged = existingItems.map((item) => ({ ...item, extras: item.extras ? [...item.extras] : undefined }));
+  const merged = existingItems.map((item) => ({ ...item, extras: item.extras ? [...item.extras] : null }));
 
   addedItems.forEach((added) => {
     const key = lineKey(added);
@@ -63,7 +63,7 @@ export function mergeOrderItems(existingItems, addedItems) {
     } else {
       merged.push({
         ...added,
-        extras: added.extras ? [...added.extras] : undefined,
+        extras: added.extras ? [...added.extras] : null,
       });
     }
   });

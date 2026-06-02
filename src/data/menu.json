@@ -1,0 +1,614 @@
+{
+  "version": 1,
+  "source": "menu.database.xlsx",
+  "topCategories": [
+    {
+      "key": "food",
+      "label": "Food",
+      "subcategories": [
+        {
+          "key": "main-courses",
+          "label": "Main Courses",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "meat_day",
+              "name": "Meat of the Day",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "fish_day",
+              "name": "Fish of the Day",
+              "sort": 20.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "vegetarian_option",
+              "name": "Vegetarian Option",
+              "sort": 30.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            }
+          ]
+        },
+        {
+          "key": "burgers",
+          "label": "Burgers",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "regular_burger",
+              "name": "Regular Burger",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true,
+              "extras": [
+                "Extra Bacon",
+                "Extra Egg",
+                "Extra Mayonnaise"
+              ]
+            },
+            {
+              "id": "veggie_burger",
+              "name": "Veggie Burger",
+              "sort": 20.0,
+              "zones": "kitchen",
+              "allowItemNote": true,
+              "extras": [
+                "Extra Bacon",
+                "Extra Egg",
+                "Extra Mayonnaise"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "pinsa",
+          "label": "Pinsa",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "pinsa_margherita",
+              "name": "Pinsa Margherita",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "pinsa_hawaii",
+              "name": "Pinsa Hawaii",
+              "sort": 20.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "pinsa_flajokull",
+              "name": "Pinsa Flajokull",
+              "sort": 30.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "pinsa_vatnajokull",
+              "name": "Pinsa Vatnajokull",
+              "sort": 40.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            }
+          ]
+        },
+        {
+          "key": "sides",
+          "label": "Sides",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "soup_or_salad",
+              "name": "Soup or Salad",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "soup_and_salad",
+              "name": "Soup and Salad",
+              "sort": 11.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            }
+          ]
+        },
+        {
+          "key": "fries",
+          "label": "Fries",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "big_fries",
+              "name": "Big Fries",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "small_fries",
+              "name": "Small Fries",
+              "sort": 20.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            }
+          ]
+        },
+        {
+          "key": "kid-menu",
+          "label": "Kid Menu",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "kid_nuggets",
+              "name": "Nuggets Kid",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "kid_fish",
+              "name": "Fish and chips Kid",
+              "sort": 10.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            },
+            {
+              "id": "kid_burger",
+              "name": "Burger Kid",
+              "sort": 30.0,
+              "zones": "kitchen",
+              "allowItemNote": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dessert",
+      "label": "Dessert",
+      "subcategories": [
+        {
+          "key": "specials",
+          "label": "Specials",
+          "zone": "kitchen",
+          "items": [
+            {
+              "id": "chef_dessert",
+              "name": "Chef Dessert",
+              "sort": 10.0,
+              "zones": "kitchen,bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "ice-cream",
+          "label": "Ice Cream",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "ice_cream_1",
+              "name": "Ice Cream 1 Scoop",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_cream_2",
+              "name": "Ice Cream 2 Scoops",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_cream_3",
+              "name": "Ice Cream 3 Scoops",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_waffle_1",
+              "name": "Ice Cream Waffle 1 Scoop",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_waffle_2",
+              "name": "Ice Cream Waffle 2 Scoops",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_waffle_3",
+              "name": "Ice Cream Waffle 3 Scoops",
+              "sort": 60.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "milkshake",
+              "name": "Milkshake",
+              "sort": 70.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "drink-menu",
+      "label": "Drink Menu",
+      "subcategories": [
+        {
+          "key": "beer",
+          "label": "Beer",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "local_draft",
+              "name": "The Local",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "horn_draft",
+              "name": "Horn n Son",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "vatna_beer",
+              "name": "Vatnajokull Beer",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "gull_beer",
+              "name": "Gull 500ml",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "litegull_beer",
+              "name": "Gull Lite",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "pilsner_beer",
+              "name": "Pilsner",
+              "sort": 60.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "zero_beer",
+              "name": "Beer Zero",
+              "sort": 70.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "white-wine",
+          "label": "White Wine",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "grigio_wine",
+              "name": "Pinot Grigio 1/4",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "sauvblanc_wine",
+              "name": "Sauvignon Blanc 1/4",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "grigio1_wine",
+              "name": "Pinot Grigio Bottle",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "sauvblanc1_wine",
+              "name": "Sauvignon Blanc Bottle",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "soda",
+          "label": "Soda",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "pepsi_soft",
+              "name": "Pepsi",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "pepsimax_soft",
+              "name": "Pepsi Max",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "7upzero_soft",
+              "name": "7UP Zero",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "applesin_soft",
+              "name": "Appelsin",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "applesinzero_soft",
+              "name": "Appelsin Zero",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "water",
+          "label": "Water",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "crystal_soft",
+              "name": "Sparkling Water (Crystal)",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "spirit",
+          "label": "Spirit",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "whisky_single",
+              "name": "Whisky Single",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "whisky_double",
+              "name": "Whisky Double",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "brennivin_single",
+              "name": "Brennivin Single",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "brennivin_double",
+              "name": "Brennivin Double",
+              "sort": 35.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "wh",
+              "name": "Whisky",
+              "sort": 37.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "wh_dbl",
+              "name": "Whisky Double",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "gin",
+              "name": "Gin",
+              "sort": 45.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "gin_dbl",
+              "name": "Gin Double",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "bailey",
+              "name": "Baileys",
+              "sort": 55.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "bailey_dbl",
+              "name": "Baileys Double",
+              "sort": 60.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "red-wine",
+          "label": "Red Wine",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "cabernet_wine",
+              "name": "Cabernet Sauvignon 1/4",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "nero_wine",
+              "name": "Montalto Nero d'Avola 1/4",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "cabernet1_wine",
+              "name": "Cabernet Sauvignon Bottle",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "nero1_wine",
+              "name": "Montalto Nero d'Avola Bottle",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "cold-and-hot",
+      "label": "Cold and Hot",
+      "subcategories": [
+        {
+          "key": "hot",
+          "label": "hot",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "espresso",
+              "name": "Espresso",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "espresso_2",
+              "name": "Espresso Double",
+              "sort": 15.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "americano",
+              "name": "Americano",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "latte",
+              "name": "Latte",
+              "sort": 30.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "cappucino",
+              "name": "Cappucino",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "hotchocolate",
+              "name": "Hot Chocolate",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "reg_teacoffe",
+              "name": "Regular Tea/Coffe",
+              "sort": 60.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "cold",
+          "label": "cold",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "apple_j",
+              "name": "Apple Juice",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "orange_j",
+              "name": "Orange Juice",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "burgerExtras": [
+    {
+      "id": "extra_bacon",
+      "name": "Extra Bacon"
+    },
+    {
+      "id": "extra_egg",
+      "name": "Extra Egg"
+    },
+    {
+      "id": "extra_mayonnaise",
+      "name": "Extra Mayonnaise"
+    }
+  ]
+}

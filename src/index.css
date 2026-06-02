@@ -1,0 +1,214 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  color: #000;
+  color-scheme: light only;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  text-align: left;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+/* Kitchen ticket cards — responsive grid, max 280px per card */
+.kitchen-tickets-grid {
+  display: grid;
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  justify-content: start;
+  grid-template-columns: repeat(1, minmax(0, 280px));
+}
+
+@media (min-width: 600px) {
+  .kitchen-tickets-grid {
+    grid-template-columns: repeat(2, minmax(0, 280px));
+  }
+}
+
+@media (min-width: 900px) {
+  .kitchen-tickets-grid {
+    grid-template-columns: repeat(3, minmax(0, 280px));
+  }
+}
+
+@media (min-width: 1200px) {
+  .kitchen-tickets-grid {
+    grid-template-columns: repeat(4, minmax(0, 280px));
+  }
+}
+
+.kitchen-tickets-grid-empty {
+  grid-column: 1 / -1;
+  max-width: 280px;
+}
+
+.kitchen-ticket-card {
+  min-width: 0;
+  max-width: 280px;
+  width: 100%;
+}
+
+/* Bar home — scrollable Quick Overview queue */
+.bar-quick-overview-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 48px);
+}
+
+.order-compose-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 190px);
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+.order-compose-menu {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.order-compose-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: calc(100vh - 130px);
+}
+
+.order-compose-items {
+  overflow-y: auto;
+  min-height: 0;
+  max-height: calc(100vh - 130px);
+  display: grid;
+  gap: 0;
+  align-content: start;
+}
+
+.order-ticket-panel {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+/* Menu items responsive grid — max 7 per row, wraps on smaller screens */
+.menu-items-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 1600px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1400px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.bar-quick-overview-list {
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table floor plan — scales as one unit to fit container */
+.table-floor-plan {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: clamp(4px, 1.5vmin, 16px);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.table-card {
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  align-self: center;
+  justify-self: center;
+  border-radius: clamp(10px, 2.6vmin, 26px);
+  border: 1px solid #d1d5db;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  padding: clamp(5px, 1.3vmin, 18px);
+  overflow: hidden;
+}
+
+.table-number {
+  font-size: clamp(18px, 4.5vmin, 39px);
+  font-weight: 800;
+  color: #000;
+}
+
+.table-tone {
+  align-self: stretch;
+  border-radius: 999px;
+  color: #000;
+  border: 1px solid #d1d5db;
+  padding: clamp(4px, 0.8vmin, 10px) clamp(5px, 1.3vmin, 16px);
+  font-size: clamp(9px, 1.6vmin, 16px);
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  display: flex;
+  justify-content: space-between;
+  gap: clamp(3px, 0.7vmin, 10px);
+  white-space: nowrap;
+  overflow: hidden;
+}

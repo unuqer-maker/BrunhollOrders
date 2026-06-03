@@ -212,3 +212,120 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* ── Mobile-only compose-order layout (max-width: 768px) ── */
+@media (max-width: 768px) {
+  /* Hide desktop order ticket panel */
+  .order-compose-layout .order-ticket-panel {
+    display: none !important;
+  }
+
+  /* Reflow to single-column */
+  .order-compose-layout .order-compose-menu {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Horizontal scrollable category nav */
+  .order-compose-layout .order-compose-nav {
+    flex-direction: row !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    gap: 6px;
+    max-height: none;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 0;
+  }
+
+  .order-compose-layout .order-compose-nav button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    width: auto !important;
+  }
+
+  /* Items: single column, full width */
+  .order-compose-layout .menu-items-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Expand item area to fill screen */
+  .order-compose-layout .order-compose-items {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* Simplify outer layout */
+  .order-compose-layout {
+    grid-template-columns: 1fr !important;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Mobile sticky bottom bar */
+  .mobile-order-bottom-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #d1d5db;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    z-index: 30;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .mobile-order-bottom-bar-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+  }
+
+  /* Bottom sheet drawer overlay */
+  .mobile-order-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 90;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .mobile-order-drawer {
+    background: white;
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .mobile-order-drawer-handle {
+    width: 36px;
+    height: 5px;
+    border-radius: 999px;
+    background: #d1d5db;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  .mobile-order-drawer-body {
+    padding: 14px 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: grid;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+}

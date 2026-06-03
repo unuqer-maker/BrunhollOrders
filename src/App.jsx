@@ -286,6 +286,131 @@ function TopBar({ mode, onChange, disabled, onBack, children }) {
   );
 }
 
+function ClearAllButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "3px 10px",
+        fontSize: "11px",
+        borderRadius: "6px",
+        border: "1px solid #fca5a5",
+        background: "#fef2f2",
+        color: "#991b1b",
+        cursor: "pointer",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        marginLeft: "auto",
+      }}
+    >
+      Clear All
+    </button>
+  );
+}
+
+function ResetModal({ onClose, onConfirm }) {
+  const [typed, setTyped] = useState("");
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget && typed !== "RESET") onClose(); }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "18px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+          padding: "28px 32px",
+          maxWidth: "440px",
+          width: "90vw",
+          display: "grid",
+          gap: "16px",
+          color: "#000",
+        }}
+      >
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#991b1b" }}>
+          Clear All Orders
+        </div>
+
+        <div style={{ fontSize: "14px", lineHeight: 1.5 }}>
+          This will permanently delete:
+          <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+            <li>all orders</li>
+            <li>all room assignments</li>
+            <li>all bar queue states</li>
+          </ul>
+        </div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>
+            Type RESET to continue
+          </div>
+          <input
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder='Type "RESET"'
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "16px",
+              outline: "none",
+              fontFamily: "Arial, sans-serif",
+              color: "#000",
+            }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { onConfirm(); onClose(); }}
+            disabled={typed !== "RESET"}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: typed === "RESET" ? "1px solid #fca5a5" : "1px solid #d1d5db",
+              background: typed === "RESET" ? "#fef2f2" : "#f3f4f6",
+              color: typed === "RESET" ? "#991b1b" : "#9ca3af",
+              cursor: typed === "RESET" ? "pointer" : "default",
+              fontWeight: 800,
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function StatusBadge({ status }) {
   const colors = getStatusColors(status);
@@ -386,6 +511,9 @@ function App() {
   const [receptionTab, setReceptionTab] = useState("active");
   const [barQueueState, setBarQueueState] = useState(local.current?.barQueueState ?? {});
   const [undoMessage, setUndoMessage] = useState(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const undoStackRef = useRef([]);
 
   const recordUndo = (snapshot, message) => {
@@ -406,6 +534,13 @@ function App() {
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
+  }, []);
+
+  // Track mobile breakpoint for responsive compose-order layout
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // Refs holding latest state for snapshot comparison (no stale closures)
@@ -814,6 +949,12 @@ function App() {
     setOrderItemsStatus(table, orderId, "PICKED UP");
   };
 
+  const clearAllState = () => {
+    setOrdersByTable({});
+    setRoomsByTable(INITIAL_ROOMS);
+    setBarQueueState({});
+  };
+
   
 if (mode === "bar" && !selectedTable) {
     return (
@@ -828,7 +969,10 @@ if (mode === "bar" && !selectedTable) {
           padding: "10px 14px",
         }}
       >
-        <TopBar mode={mode} onChange={switchMode} disabled />
+        <TopBar mode={mode} onChange={switchMode} disabled>
+          <ClearAllButton onClick={() => setShowResetModal(true)} />
+        </TopBar>
+        {showResetModal && <ResetModal onClose={() => setShowResetModal(false)} onConfirm={clearAllState} />}
 
         <div
           style={{
@@ -1232,6 +1376,428 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
       cursor: "pointer",
     });
 
+    // ── Mobile compose-order layout ──
+    if (isMobile) {
+      const mobileNavStyle = (active) => ({
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+        background: active ? "#e8f5e9" : "white",
+        color: "#000",
+        border: active ? "1px solid #a5d6a7" : "1px solid #d1d5db",
+        padding: "10px 16px",
+        fontSize: "15px",
+        fontWeight: 700,
+        borderRadius: "12px",
+        cursor: "pointer",
+        minHeight: "44px",
+      });
+
+      // Build a compact summary string for the bottom bar
+      const summaryItems = draftLines.slice(0, 2).map((l) => `${l.name} x${l.qty}`);
+      const remaining = draftLines.length > 2 ? ` +${draftLines.length - 2} more` : "";
+      const bottomBarText =
+        draftLines.length === 0
+          ? "No items selected"
+          : `${totalItems} item${totalItems !== 1 ? "s" : ""} selected`;
+      const bottomBarDetail = draftLines.length > 0 ? summaryItems.join(" • ") + remaining : "";
+
+      const handleMobileSave = () => {
+        setShowMobileDrawer(false);
+        saveOrder();
+      };
+
+      return (
+        <div
+          style={{
+            ...pageStyle,
+            height: "100vh",
+            overflow: "hidden",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            padding: "8px 10px 0",
+          }}
+        >
+          <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("choose-customer")}>
+            <span
+              style={{
+                padding: "3px 10px",
+                borderRadius: "999px",
+                background: "#dbeafe",
+                color: "#000",
+                fontSize: "11px",
+                fontWeight: 800,
+                border: "1px solid #93c5fd",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Table {selectedTable}
+            </span>
+            <span
+              style={{
+                padding: "3px 10px",
+                borderRadius: "999px",
+                background: "#e8f5e9",
+                color: "#000",
+                fontSize: "11px",
+                fontWeight: 800,
+                border: "1px solid #a5d6a7",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {selectedRoom}
+            </span>
+          </TopBar>
+
+          {/* Horizontal scrollable category nav */}
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+              overflowX: "auto",
+              paddingBottom: "6px",
+              flexShrink: 0,
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {TOP_CATEGORIES.map((top) => (
+              <button
+                key={top.key}
+                type="button"
+                onClick={() => setDraftTopCategory(top.key)}
+                style={mobileNavStyle(draftTopCategory === top.key)}
+              >
+                {top.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Menu items — single column, scrollable */}
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: "4px" }}>
+            {activeTop.subcategories.map((sub) => (
+              <div key={sub.key} style={{ marginBottom: "8px" }}>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    letterSpacing: "0.6px",
+                    color: "#000",
+                    padding: "8px 0 4px",
+                    borderBottom: "2px solid #d1d5db",
+                    marginBottom: "8px",
+                  }}
+                >
+                  === {sub.label.toUpperCase()} ===
+                </div>
+
+                {sub.items.map((menuItem) => {
+                  const qty = draftCounts[menuItem.id] || 0;
+                  const hasExtras = menuItem.extras?.length > 0;
+
+                  return (
+                    <div
+                      key={menuItem.id}
+                      style={{
+                        ...cardStyle,
+                        padding: "10px 12px",
+                        border: "1px solid #d1d5db",
+                        marginBottom: "6px",
+                        display: "grid",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#000", lineHeight: 1.2 }}>
+                        {menuItem.name}
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <button
+                          type="button"
+                          onClick={() => changeQty(menuItem.id, -1)}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            borderRadius: "10px",
+                            border: "none",
+                            cursor: "pointer",
+                            background: "#eaeaea",
+                            fontSize: "22px",
+                            fontWeight: 800,
+                            color: "#000",
+                            lineHeight: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          −
+                        </button>
+                        <div
+                          style={{
+                            minWidth: "32px",
+                            textAlign: "center",
+                            fontSize: "20px",
+                            fontWeight: 800,
+                            color: "#000",
+                          }}
+                        >
+                          {qty}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => changeQty(menuItem.id, 1)}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            borderRadius: "10px",
+                            border: "1px solid #93c5fd",
+                            cursor: "pointer",
+                            background: "#dbeafe",
+                            fontSize: "22px",
+                            fontWeight: 800,
+                            color: "#000",
+                            lineHeight: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {hasExtras && qty > 0 ? (
+                        <div style={{ display: "grid", gap: "4px" }}>
+                          {menuItem.extras.map((extraName) => {
+                            const checked = (draftExtras[menuItem.id] || []).includes(extraName);
+                            return (
+                              <button
+                                key={extraName}
+                                type="button"
+                                onClick={() => toggleDraftExtra(menuItem.id, extraName)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  textAlign: "left",
+                                  border: "1px solid #d1d5db",
+                                  borderRadius: "8px",
+                                  padding: "8px 12px",
+                                  background: checked ? "#dcfce7" : "white",
+                                  color: "#000",
+                                  cursor: "pointer",
+                                  fontSize: "14px",
+                                  fontWeight: 600,
+                                  minHeight: "44px",
+                                }}
+                              >
+                                <span style={{ fontSize: "16px", width: "22px" }}>{checked ? "☑" : "☐"}</span>
+                                {extraName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+
+                      {menuItem.allowItemNote ? (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDraftNoteOpenFor((current) =>
+                                current === menuItem.id ? null : menuItem.id
+                              )
+                            }
+                            style={{
+                              padding: "10px 14px",
+                              fontSize: "14px",
+                              borderRadius: "10px",
+                              border: "1px solid #d1d5db",
+                              background: draftItemNotes[menuItem.id] ? "#dcfce7" : "white",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 700,
+                              minHeight: "44px",
+                              width: "100%",
+                              textAlign: "left",
+                            }}
+                          >
+                            ✎ Note
+                          </button>
+                          {draftNoteOpenFor === menuItem.id || draftItemNotes[menuItem.id] ? (
+                            <textarea
+                              value={draftItemNotes[menuItem.id] || ""}
+                              onChange={(e) =>
+                                setDraftItemNotes((prev) => ({
+                                  ...prev,
+                                  [menuItem.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="No sauce, gluten free…"
+                              rows={3}
+                              style={{
+                                width: "100%",
+                                marginTop: "6px",
+                                resize: "vertical",
+                                borderRadius: "10px",
+                                border: "1px solid #ddd",
+                                padding: "10px",
+                                fontSize: "15px",
+                                fontFamily: "Arial, sans-serif",
+                                outline: "none",
+                                color: "#000",
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Sticky bottom summary bar */}
+          <div
+            className="mobile-order-bottom-bar"
+            onClick={() => setShowMobileDrawer(true)}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {totalItems > 0 && <span className="mobile-order-bottom-bar-dot" />}
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>{bottomBarText}</div>
+                {bottomBarDetail ? (
+                  <div style={{ fontSize: "12px", color: "#666", marginTop: "2px", lineHeight: 1.3 }}>
+                    {bottomBarDetail}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: "#666" }}>▲</div>
+          </div>
+
+          {/* Bottom sheet order drawer */}
+          {showMobileDrawer ? (
+            <div
+              className="mobile-order-drawer-overlay"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowMobileDrawer(false);
+              }}
+            >
+              <div className="mobile-order-drawer" onClick={(e) => e.stopPropagation()}>
+                <div className="mobile-order-drawer-handle" />
+
+                <div className="mobile-order-drawer-body">
+                  <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>
+                    {selectedRoom} — Table {selectedTable}
+                  </div>
+
+                  <hr style={{ border: "none", borderTop: "1px solid #d1d5db", margin: 0 }} />
+
+                  <div style={{ display: "grid", gap: "8px", fontSize: "16px", lineHeight: 1.4, color: "#000" }}>
+                    {draftLines.length === 0 ? (
+                      <div style={{ color: "#000", fontSize: "14px" }}>Add items from the menu</div>
+                    ) : (
+                      draftLines.map((line) => (
+                        <div key={`mobile-${line.id}-${line.note}-${line.extras.join(",")}`}>
+                          <div style={{ fontWeight: 800 }}>
+                            {line.qty}x {line.name}
+                          </div>
+                          {line.extras.map((extra) => (
+                            <div key={extra} style={{ paddingLeft: "14px", fontWeight: 600, fontSize: "14px" }}>
+                              * {extra}
+                            </div>
+                          ))}
+                          {line.note ? (
+                            <div style={{ paddingLeft: "14px", fontSize: "14px" }}>Note: {line.note}</div>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {showOrderLevelNote ? (
+                    <>
+                      <hr style={{ border: "none", borderTop: "1px solid #d1d5db", margin: 0 }} />
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 800, marginBottom: "8px", color: "#000" }}>
+                          Notes
+                        </div>
+                        <textarea
+                          value={draftNote}
+                          onChange={(e) => setDraftNote(e.target.value)}
+                          placeholder="Order note"
+                          rows={2}
+                          style={{
+                            width: "100%",
+                            resize: "vertical",
+                            borderRadius: "10px",
+                            border: "1px solid #ddd",
+                            padding: "10px",
+                            fontSize: "15px",
+                            fontFamily: "Arial, sans-serif",
+                            outline: "none",
+                            color: "#000",
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+
+                  <hr style={{ border: "none", borderTop: "1px solid #d1d5db", margin: 0 }} />
+
+                  <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>Total items: {totalItems}</div>
+
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileDrawer(false)}
+                      style={{
+                        flex: 1,
+                        padding: "14px 16px",
+                        fontSize: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid #d1d5db",
+                        background: "#f3f4f6",
+                        color: "#000",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        minHeight: "48px",
+                      }}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMobileSave}
+                      style={{
+                        flex: 1,
+                        padding: "14px 16px",
+                        fontSize: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid #86efac",
+                        background: "#dcfce7",
+                        color: "#000",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        minHeight: "48px",
+                      }}
+                    >
+                      Save Order
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <UndoBar message={undoMessage} onUndo={performUndo} />
+        </div>
+      );
+    }
+
+    // ── Desktop compose-order layout (unchanged) ──
     return (
       <div
         style={{
@@ -1585,7 +2151,10 @@ if (mode === "kitchen") {
           color: "#000",
         }}
       >
-        <TopBar mode={mode} onChange={switchMode} disabled />
+        <TopBar mode={mode} onChange={switchMode} disabled>
+          <ClearAllButton onClick={() => setShowResetModal(true)} />
+        </TopBar>
+        {showResetModal && <ResetModal onClose={() => setShowResetModal(false)} onConfirm={clearAllState} />}
 
         <div
           style={{

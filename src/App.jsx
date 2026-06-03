@@ -356,7 +356,6 @@ function AddRoomModal({ onClose, onConfirm }) {
           </div>
           <input
             type="text"
-            inputMode="numeric"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder="e.g. 8A, STAFF"

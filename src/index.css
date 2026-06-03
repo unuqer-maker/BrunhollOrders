@@ -262,23 +262,25 @@ textarea {
     min-height: 0;
   }
 
-  /* Mobile sticky bottom bar */
+  /* Menu scroll area — bottom padding so last item clears fixed bottom bar */
+  .mobile-order-menu-scroll {
+    padding-bottom: 72px !important;
+  }
+
+  /* Mobile bottom bar — fixed to viewport, always visible */
   .mobile-order-bottom-bar {
-    position: sticky;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: white;
     border-top: 1px solid #d1d5db;
-    padding: 12px 14px;
+    padding: 10px 12px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    cursor: pointer;
+    gap: 8px;
     z-index: 30;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
   }
 
   .mobile-order-bottom-bar-dot {
@@ -327,5 +329,37 @@ textarea {
     display: grid;
     gap: 12px;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Bar home mobile: stack vertically (tables first, orders second) ── */
+  .bar-home-layout-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .bar-home-layout-mobile .table-floor-plan {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    height: auto;
+    flex: none;
+    flex-shrink: 0;
+  }
+
+  /* Quick overview panel below tables on mobile */
+  .bar-quick-overview-panel-mobile {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Horizontal overflow protection ── */
+  .mobile-safe-container {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }

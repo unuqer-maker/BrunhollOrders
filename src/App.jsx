@@ -957,6 +957,204 @@ function App() {
 
   
 if (mode === "bar" && !selectedTable) {
+    // ── Mobile: vertical stack (tables first, orders scroll below) ──
+    if (isMobile) {
+      return (
+        <div
+          style={{
+            ...pageStyle,
+            height: "100vh",
+            overflow: "hidden",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            padding: "8px 10px 0",
+          }}
+        >
+          <TopBar mode={mode} onChange={switchMode} disabled>
+            <ClearAllButton onClick={() => setShowResetModal(true)} />
+          </TopBar>
+          {showResetModal && <ResetModal onClose={() => setShowResetModal(false)} onConfirm={clearAllState} />}
+
+          <div className="bar-home-layout-mobile mobile-safe-container">
+            <div className="table-floor-plan">
+              {TABLE_POSITIONS.map(({ id, row, col }) => {
+                const tone = getTableTone(id);
+                const ordersCount = getVisibleOrdersForTable(id).length;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => openTable(id)}
+                    className="table-card"
+                    style={{
+                      gridRow: row,
+                      gridColumn: col,
+                    }}
+                  >
+                    <span className="table-number">{id}</span>
+                    <span
+                      className="table-tone"
+                      style={{
+                        background: tone.background,
+                      }}
+                    >
+                      <span>{tone.label}</span>
+                      <span>{ordersCount}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="bar-quick-overview-panel-mobile">
+              <div
+                style={{
+                  ...cardStyle,
+                  padding: "10px",
+                  marginBottom: "10px",
+                  border: "1px solid #d1d5db",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>Quick overview</div>
+                <div style={{ color: "#000", marginTop: "2px", fontSize: "12px" }}>
+                  Tap items to mark done • OK when finished
+                </div>
+              </div>
+
+              <div className="bar-quick-overview-list" style={{ maxHeight: "none", flex: 1 }}>
+                {barOverviewOrders.length === 0 ? (
+                  <div style={{ ...cardStyle, padding: "14px", color: "#000", border: "1px solid #d1d5db" }}>
+                    No orders yet
+                  </div>
+                ) : (
+                  barOverviewOrders.map((order) => {
+                    const queueEntry = getBarQueueEntry(order.table, order.id);
+                    const orderDone = queueEntry.orderOk;
+
+                    return (
+                      <div
+                        key={`${order.table}-${order.id}`}
+                        style={{
+                          ...cardStyle,
+                          width: "100%",
+                          textAlign: "left",
+                          border: "1px solid #d1d5db",
+                          padding: "12px",
+                          color: "#000",
+                          display: "grid",
+                          gap: "8px",
+                          background: orderDone ? "#e5e7eb" : "white",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                            alignItems: "flex-start",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => openTable(order.table)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              padding: 0,
+                              cursor: "pointer",
+                              textAlign: "left",
+                              color: "#000",
+                              flex: 1,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>
+                              Table {order.table}
+                            </div>
+                            <div style={{ fontSize: "14px", fontWeight: 700, color: "#000", marginTop: "1px" }}>
+                              {order.room}
+                            </div>
+                            <div style={{ color: "#000", marginTop: "2px", fontSize: "11px", fontWeight: 400 }}>
+                              {formatElapsed(order.createdAt, now)}
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleBarOrderOk(order.table, order.id)}
+                            style={{
+                              padding: "10px 14px",
+                              borderRadius: "10px",
+                              border: "1px solid #d1d5db",
+                              background: orderDone ? "#d1d5db" : "white",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 800,
+                              fontSize: "14px",
+                              flexShrink: 0,
+                              minHeight: "44px",
+                            }}
+                          >
+                            OK
+                          </button>
+                        </div>
+
+                        <div style={{ display: "grid", gap: "6px" }}>
+                          {order.queueItems.length === 0 ? (
+                            <div style={{ color: "#000", fontSize: "13px" }}>No bar items on this ticket</div>
+                          ) : (
+                            order.queueItems.map((item) => {
+                              const itemDone = Boolean(queueEntry.itemsDone[String(item.sourceIndex)]);
+
+                              return (
+                                <button
+                                  key={`${order.id}-${item.sourceIndex}-${item.name}`}
+                                  type="button"
+                                  onClick={() => toggleBarItemDone(order.table, order.id, item.sourceIndex)}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "10px",
+                                    width: "100%",
+                                    textAlign: "left",
+                                    border: "1px solid #d1d5db",
+                                    borderRadius: "10px",
+                                    padding: "10px 12px",
+                                    background: itemDone ? "#dcfce7" : "white",
+                                    color: "#000",
+                                    cursor: "pointer",
+                                    fontSize: "14px",
+                                    fontWeight: 600,
+                                    lineHeight: 1.3,
+                                    minHeight: "44px",
+                                  }}
+                                >
+                                  <span style={{ fontSize: "16px", width: "22px", flexShrink: 0 }}>
+                                    {itemDone ? "✓" : "□"}
+                                  </span>
+                                  <span>
+                                    {item.qty}x {item.name}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+          <UndoBar message={undoMessage} onUndo={performUndo} />
+        </div>
+      );
+    }
+
+    // ── Desktop bar home layout (unchanged) ──
     return (
       <div
         style={{
@@ -1473,7 +1671,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
           </div>
 
           {/* Menu items — single column, scrollable */}
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: "4px" }}>
+          <div className="mobile-order-menu-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
             {activeTop.subcategories.map((sub) => (
               <div key={sub.key} style={{ marginBottom: "8px" }}>
                 <div
@@ -1658,23 +1856,60 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
             ))}
           </div>
 
-          {/* Sticky bottom summary bar */}
-          <div
-            className="mobile-order-bottom-bar"
-            onClick={() => setShowMobileDrawer(true)}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {/* Fixed bottom bar: Order Summary (opens drawer) + Save Order */}
+          <div className="mobile-order-bottom-bar">
+            <button
+              type="button"
+              onClick={() => setShowMobileDrawer(true)}
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 12px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+                background: "#fafafa",
+                cursor: "pointer",
+                color: "#000",
+                textAlign: "left",
+                minHeight: "44px",
+                minWidth: 0,
+              }}
+            >
               {totalItems > 0 && <span className="mobile-order-bottom-bar-dot" />}
-              <div>
-                <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>{bottomBarText}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: "14px", fontWeight: 800, color: "#000", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {bottomBarText}
+                </div>
                 {bottomBarDetail ? (
-                  <div style={{ fontSize: "12px", color: "#666", marginTop: "2px", lineHeight: 1.3 }}>
+                  <div style={{ fontSize: "11px", color: "#666", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {bottomBarDetail}
                   </div>
                 ) : null}
               </div>
-            </div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#666" }}>▲</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={saveOrder}
+              disabled={draftLines.length === 0}
+              style={{
+                padding: "10px 20px",
+                fontSize: "15px",
+                fontWeight: 800,
+                borderRadius: "10px",
+                border: "1px solid #86efac",
+                background: draftLines.length > 0 ? "#dcfce7" : "#f3f4f6",
+                color: draftLines.length > 0 ? "#000" : "#9ca3af",
+                cursor: draftLines.length > 0 ? "pointer" : "default",
+                whiteSpace: "nowrap",
+                minHeight: "44px",
+                flexShrink: 0,
+              }}
+            >
+              Save Order
+            </button>
           </div>
 
           {/* Bottom sheet order drawer */}

@@ -866,6 +866,31 @@ function App() {
 
   const selectedOrders = selectedTable ? getVisibleOrdersForTable(selectedTable) : [];
 
+  // Rooms that belong to this table, have past orders, but no active orders currently
+  const oldRoomsOrders = useMemo(() => {
+    if (!selectedTable) return [];
+    const tableOrders = ordersByTable[selectedTable] || [];
+    const rooms = roomsByTable[selectedTable] || [];
+    const activeRoomNames = new Set(selectedOrders.map((o) => o.room));
+
+    // Build a map of room → most recent order timestamp
+    const roomLatest = {};
+    tableOrders.forEach((order) => {
+      if (!roomLatest[order.room] || order.createdAt > roomLatest[order.room]) {
+        roomLatest[order.room] = order.createdAt;
+      }
+    });
+
+    // Rooms that have orders but are NOT in activeRoomNames
+    return rooms
+      .filter((room) => roomLatest[room] != null && !activeRoomNames.has(room))
+      .map((room) => ({
+        room,
+        lastCreatedAt: roomLatest[room],
+      }))
+      .sort((a, b) => b.lastCreatedAt - a.lastCreatedAt);
+  }, [selectedTable, ordersByTable, roomsByTable, selectedOrders]);
+
   const getTableTone = (table) => {
     const visibleOrders = getVisibleOrdersForTable(table);
 
@@ -1484,7 +1509,136 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
         </TopBar>
 
         <div style={{ display: "grid", gap: "14px", maxWidth: "900px", flex: 1, overflow: "auto", minHeight: 0 }}>
-          {selectedOrders.length === 0 ? (
+          {/* ── Active Orders ── */}
+          {selectedOrders.length > 0 && (
+            <>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#000" }}>
+                Active Orders ({selectedOrders.length})
+              </div>
+              {selectedOrders.map((order) => {
+                const orderStatus = getOrderStatus(order.items);
+
+                return (
+                  <div
+                    key={order.id}
+                    style={{
+                      ...cardStyle,
+                      padding: "18px",
+                      border: "1px solid #d1d5db",
+                      borderLeft: `8px solid ${getStatusColors(orderStatus).background}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "22px", fontWeight: 800, color: "#000" }}>{order.room}</div>
+                        <div style={{ color: "#000", marginTop: "4px" }}>
+                          Created: {formatElapsed(order.createdAt, now)}
+                        </div>
+                      </div>
+
+                      <StatusBadge status={orderStatus} />
+                    </div>
+
+                    <div style={{ marginTop: "14px" }}>
+                      <OrderTicketLines
+                        lines={order.items.map((item) => ({
+                          id: item.id || item.name,
+                          name: item.name,
+                          qty: item.qty,
+                          extras: item.extras || [],
+                          note: item.note || "",
+                        }))}
+                      />
+                    </div>
+
+                    {order.note ? (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          background: "#fafafa",
+                          borderRadius: "12px",
+                          color: "#000",
+                        }}
+                      >
+                        Note: {order.note}
+                      </div>
+                    ) : null}
+
+                    <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => startComposeForRoom(order.room)}
+                        style={{
+                          ...secondaryButtonStyle,
+                          background: "#dbeafe",
+                          color: "#000",
+                          border: "1px solid #93c5fd",
+                        }}
+                      >
+                        + Add to this room
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* ── Old Orders ── */}
+          {oldRoomsOrders.length > 0 && (
+            <>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#000" }}>
+                Old Orders ({oldRoomsOrders.length})
+              </div>
+              {oldRoomsOrders.map(({ room, lastCreatedAt }) => (
+                <div
+                  key={room}
+                  style={{
+                    ...cardStyle,
+                    padding: "14px 18px",
+                    border: "1px solid #d1d5db",
+                    borderLeft: "8px solid #e5e7eb",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "20px", fontWeight: 800, color: "#000" }}>{room}</div>
+                    <div style={{ color: "#555", marginTop: "4px", fontSize: "13px" }}>
+                      Last order: {formatElapsed(lastCreatedAt, now)} ago
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => startComposeForRoom(room)}
+                    style={{
+                      ...secondaryButtonStyle,
+                      padding: "10px 16px",
+                      fontSize: "14px",
+                      background: "#dbeafe",
+                      color: "#000",
+                      border: "1px solid #93c5fd",
+                    }}
+                  >
+                    + Add to this room
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ── No Active Orders ── */}
+          {selectedOrders.length === 0 && (
             <div
               style={{
                 ...cardStyle,
@@ -1493,88 +1647,13 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
                 border: "1px solid #d1d5db",
               }}
             >
-              No active orders
+              No Active Orders {oldRoomsOrders.length > 0 ? `(${oldRoomsOrders.length} old)` : "(0)"}
             </div>
-          ) : (
-            selectedOrders.map((order) => {
-              const orderStatus = getOrderStatus(order.items);
-
-              return (
-                <div
-                  key={order.id}
-                  style={{
-                    ...cardStyle,
-                    padding: "18px",
-                    border: "1px solid #d1d5db",
-                    borderLeft: `8px solid ${getStatusColors(orderStatus).background}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      alignItems: "flex-start",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: "22px", fontWeight: 800, color: "#000" }}>{order.room}</div>
-                      <div style={{ color: "#000", marginTop: "4px" }}>
-                        Created: {formatElapsed(order.createdAt, now)}
-                      </div>
-                    </div>
-
-                    <StatusBadge status={orderStatus} />
-                  </div>
-
-                  <div style={{ marginTop: "14px" }}>
-                    <OrderTicketLines
-                      lines={order.items.map((item) => ({
-                        id: item.id || item.name,
-                        name: item.name,
-                        qty: item.qty,
-                        extras: item.extras || [],
-                        note: item.note || "",
-                      }))}
-                    />
-                  </div>
-
-                  {order.note ? (
-                    <div
-                      style={{
-                        marginTop: "12px",
-                        padding: "12px",
-                        background: "#fafafa",
-                        borderRadius: "12px",
-                        color: "#000",
-                      }}
-                    >
-                      Note: {order.note}
-                    </div>
-                  ) : null}
-
-                  <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => startComposeForRoom(order.room)}
-                      style={{
-                        ...secondaryButtonStyle,
-                        background: "#dbeafe",
-                        color: "#000",
-                        border: "1px solid #93c5fd",
-                      }}
-                    >
-                      + Add to this room
-                    </button>
-                  </div>
-                </div>
-              );
-            })
           )}
+
           <button
             onClick={startNewOrder}
             style={{
-              marginTop: "12px",
               padding: "10px 16px",
               fontSize: "14px",
               borderRadius: "8px",

@@ -925,7 +925,7 @@ function App() {
   };
 
   const startNewOrder = () => {
-    setTableStage("choose-customer");
+    setShowAddRoomModal(true);
     setSelectedRoom(null);
     resetComposeDraft();
   };
@@ -953,6 +953,9 @@ function App() {
         [selectedTable]: [...current, roomLabel],
       };
     });
+
+    // Immediately start composing for the new room
+    startComposeForRoom(roomLabel);
   };
 
   const changeQty = (itemId, delta) => {
@@ -1668,69 +1671,6 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
             + New Order
           </button>
         </div>
-        <UndoBar message={undoMessage} onUndo={performUndo} />
-      </div>
-    );
-  }
-if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
-    const rooms = roomsByTable[selectedTable] || [];
-
-    return (
-      <div style={{ ...pageStyle, padding: "10px 14px" }}>
-        <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("overview")}>
-          <span
-            style={{
-              padding: "3px 10px",
-              borderRadius: "999px",
-              background: "#dbeafe",
-              color: "#000",
-              fontSize: "11px",
-              fontWeight: 800,
-              border: "1px solid #93c5fd",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Table {selectedTable}
-          </span>
-        </TopBar>
-
-        <div style={{ color: "#000", fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Select customer</div>
-
-        <div style={{ marginTop: "22px", display: "grid", gap: "14px", maxWidth: "520px" }}>
-          {rooms.map((room) => (
-            <button
-              key={room}
-              onClick={() => startComposeForRoom(room)}
-              style={{
-                ...cardStyle,
-                border: "none",
-                padding: "18px 18px",
-                cursor: "pointer",
-                fontSize: "20px",
-                fontWeight: 800,
-                textAlign: "left",
-              }}
-            >
-              {room}
-            </button>
-          ))}
-
-          <button
-            onClick={openAddRoomModal}
-            style={{
-              ...cardStyle,
-              border: "1px dashed #999",
-              background: "transparent",
-              padding: "18px 18px",
-              cursor: "pointer",
-              fontSize: "18px",
-              fontWeight: 800,
-              textAlign: "left",
-            }}
-          >
-            + Add Room
-          </button>
-        </div>
         {showAddRoomModal && <AddRoomModal onClose={() => setShowAddRoomModal(false)} onConfirm={confirmAddRoom} />}
         <UndoBar message={undoMessage} onUndo={performUndo} />
       </div>
@@ -1800,7 +1740,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
               padding: "8px 10px 0",
             }}
           >
-            <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("choose-customer")}>
+            <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("overview")}>
             <span
               style={{
                 padding: "3px 10px",
@@ -2230,7 +2170,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
           padding: "12px 16px",
         }}
       >
-        <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("choose-customer")}>
+        <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("overview")}>
           <span
             style={{
               padding: "3px 10px",

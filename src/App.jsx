@@ -2847,16 +2847,13 @@ if (mode === "reception") {
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
-                          fontSize: "clamp(15px, 1.6vw, 20px)",
+                          fontSize: "clamp(13px, 1.4vw, 18px)",
                           fontWeight: 800,
                           color: "#000",
-                          lineHeight: 1.2,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          lineHeight: 1.25,
                         }}
                       >
-                        Table {order.table} • {order.room}
+                        Room {order.room} • Table {order.table}
                       </div>
                       <div
                         style={{

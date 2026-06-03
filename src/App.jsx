@@ -308,6 +308,111 @@ function ClearAllButton({ onClick }) {
   );
 }
 
+function AddRoomModal({ onClose, onConfirm }) {
+  const [typed, setTyped] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (typed.trim()) {
+      onConfirm(typed.trim());
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          background: "white",
+          borderRadius: "18px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+          padding: "28px 32px",
+          maxWidth: "440px",
+          width: "90vw",
+          display: "grid",
+          gap: "16px",
+          color: "#000",
+        }}
+      >
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>
+          Add Room
+        </div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>
+            Enter room number or label
+          </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="e.g. 8A, STAFF"
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "16px",
+              outline: "none",
+              fontFamily: "Arial, sans-serif",
+              color: "#000",
+            }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!typed.trim()}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: typed.trim() ? "1px solid #93c5fd" : "1px solid #d1d5db",
+              background: typed.trim() ? "#dbeafe" : "#f3f4f6",
+              color: typed.trim() ? "#000" : "#9ca3af",
+              cursor: typed.trim() ? "pointer" : "default",
+              fontWeight: 800,
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function ResetModal({ onClose, onConfirm }) {
   const [typed, setTyped] = useState("");
 
@@ -512,6 +617,7 @@ function App() {
   const [barQueueState, setBarQueueState] = useState(local.current?.barQueueState ?? {});
   const [undoMessage, setUndoMessage] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const undoStackRef = useRef([]);
@@ -806,16 +912,14 @@ function App() {
     resetComposeDraft();
   };
 
-  const addRoom = () => {
-    if (!selectedTable) return;
+  const openAddRoomModal = () => {
+    setShowAddRoomModal(true);
+  };
 
-    const value = window.prompt("Enter room number or label");
-    if (!value) return;
+  const confirmAddRoom = (value) => {
+    if (!selectedTable || !value.trim()) return;
 
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    const roomLabel = formatRoomLabel(trimmed);
+    const roomLabel = formatRoomLabel(value.trim());
 
     setRoomsByTable((prev) => {
       const current = prev[selectedTable] || [];
@@ -1534,7 +1638,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
           ))}
 
           <button
-            onClick={addRoom}
+            onClick={openAddRoomModal}
             style={{
               ...cardStyle,
               border: "1px dashed #999",
@@ -1549,6 +1653,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
             + Add Room
           </button>
         </div>
+        {showAddRoomModal && <AddRoomModal onClose={() => setShowAddRoomModal(false)} onConfirm={confirmAddRoom} />}
         <UndoBar message={undoMessage} onUndo={performUndo} />
       </div>
     );
@@ -1605,18 +1710,19 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
       };
 
       return (
-        <div
-          style={{
-            ...pageStyle,
-            height: "100vh",
-            overflow: "hidden",
-            boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-            padding: "8px 10px 0",
-          }}
-        >
-          <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("choose-customer")}>
+        <>
+          <div
+            style={{
+              ...pageStyle,
+              height: "100vh",
+              overflow: "hidden",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              padding: "8px 10px 0",
+            }}
+          >
+            <TopBar mode={mode} onChange={switchMode} onBack={() => setTableStage("choose-customer")}>
             <span
               style={{
                 padding: "3px 10px",
@@ -1856,7 +1962,10 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
             ))}
           </div>
 
-          {/* Fixed bottom bar: Order Summary (opens drawer) + Save Order */}
+            <UndoBar message={undoMessage} onUndo={performUndo} />
+          </div>
+
+          {/* Fixed bottom bar — outside overflow:hidden container so position:fixed works reliably on all browsers */}
           <div className="mobile-order-bottom-bar">
             <button
               type="button"
@@ -1912,7 +2021,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
             </button>
           </div>
 
-          {/* Bottom sheet order drawer */}
+          {/* Bottom sheet order drawer — also outside overflow container */}
           {showMobileDrawer ? (
             <div
               className="mobile-order-drawer-overlay"
@@ -2026,9 +2135,7 @@ if (mode === "bar" && selectedTable && tableStage === "choose-customer") {
               </div>
             </div>
           ) : null}
-
-          <UndoBar message={undoMessage} onUndo={performUndo} />
-        </div>
+        </>
       );
     }
 
@@ -2397,6 +2504,7 @@ if (mode === "kitchen") {
             gap: "8px",
             marginBottom: "8px",
             justifyContent: "center",
+            alignItems: "center",
           }}
         >
           {[
@@ -2408,8 +2516,6 @@ if (mode === "kitchen") {
             <div
               key={stat.label}
               style={{
-                width: "90px",
-                height: "90px",
                 borderRadius: "10px",
                 boxShadow: "0 1px 6px rgba(0,0,0,0.10)",
                 border: "1px solid #d1d5db",
@@ -2419,14 +2525,15 @@ if (mode === "kitchen") {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "2px",
+                gap: "1px",
                 flexShrink: 0,
+                padding: "3px 12px",
               }}
             >
-              <div style={{ color: "#000", fontSize: "8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.3px" }}>
+              <div style={{ color: "#000", fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.3px" }}>
                 {stat.label}
               </div>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#000", lineHeight: 1 }}>
+              <div style={{ fontSize: "19px", fontWeight: 800, color: "#000", lineHeight: 1 }}>
                 {stat.value}
               </div>
             </div>
@@ -2631,14 +2738,17 @@ if (mode === "reception") {
         ? allOrders.filter((order) => order.orderStatus !== "PICKED UP")
         : receptionOrders;
 
+    const activeCount = allOrders.filter((order) => order.orderStatus !== "PICKED UP").length;
+    const historyCount = receptionOrders.length;
+
     return (
       <div style={{ ...pageStyle, padding: "10px 14px" }}>
         <TopBar mode={mode} onChange={switchMode} disabled />
 
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px", alignItems: "center" }}>
           {[
-            { key: "active", label: "ACTIVE" },
-            { key: "history", label: "HISTORY 24H" },
+            { key: "active", label: "Active Orders", count: activeCount },
+            { key: "history", label: "History 24h", count: historyCount },
           ].map((tab) => {
             const active = tab.key === receptionTab;
             return (
@@ -2646,101 +2756,165 @@ if (mode === "reception") {
                 key={tab.key}
                 onClick={() => setReceptionTab(tab.key)}
                 style={{
-                  ...secondaryButtonStyle,
+                  padding: "12px 18px",
+                  fontSize: "16px",
+                  borderRadius: "12px",
+                  border: active ? "1px solid #93c5fd" : "1px solid #d1d5db",
                   background: active ? "#dbeafe" : "white",
                   color: "#000",
-                  border: active ? "1px solid #93c5fd" : "none",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: active ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
                 }}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                <span
+                  style={{
+                    padding: "2px 10px",
+                    borderRadius: "999px",
+                    background: active ? "#93c5fd" : "#e5e7eb",
+                    color: "#000",
+                    fontSize: "14px",
+                    fontWeight: 800,
+                    minWidth: "28px",
+                    textAlign: "center",
+                  }}
+                >
+                  {tab.count}
+                </span>
               </button>
             );
           })}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gap: "16px",
-            width: "100%",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          }}
-        >
+        <div className="reception-cards-grid">
           {filteredOrders.length === 0 ? (
             <div
-              style={{
-                ...cardStyle,
-                gridColumn: "1 / -1",
-                padding: "20px",
-                color: "#000",
-                border: "1px solid #d1d5db",
-              }}
+              className="reception-empty-card"
+              style={{ ...cardStyle, padding: "20px", color: "#000", border: "1px solid #d1d5db" }}
             >
               No orders in this view
             </div>
           ) : (
-            filteredOrders.map((order) => (
-              <div
-                key={`${order.table}-${order.id}`}
-                style={{
-                  ...cardStyle,
-                  padding: "16px",
-                  border: "1px solid #d1d5db",
-                  minWidth: 0,
-                }}
-              >
+            filteredOrders.map((order) => {
+              const orderStatus = getOrderStatus(order.items);
+              const statusColors = getStatusColors(orderStatus);
+
+              return (
                 <div
+                  key={`${order.table}-${order.id}`}
+                  className="reception-card"
                   style={{
+                    ...cardStyle,
+                    border: "1px solid #d1d5db",
+                    borderTop: `4px solid ${statusColors.background}`,
                     display: "flex",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
+                    flexDirection: "column",
+                    gap: "10px",
+                    minWidth: 0,
+                    minHeight: 0,
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: "22px", fontWeight: 800, color: "#000" }}>
-                      Table {order.table} • {order.room}
-                    </div>
-                    <div style={{ color: "#000", marginTop: "4px" }}>
-                      Created: {formatElapsed(order.createdAt, now)}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "14px",
-                    background: "#fafafa",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    fontFamily: "ui-monospace, Menlo, monospace",
-                    fontSize: "16px",
-                    lineHeight: 1.6,
-                    color: "#000",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {formatTicketPlainText(order.items)}
-                </div>
-
-                {order.note ? (
                   <div
                     style={{
-                      marginTop: "12px",
-                      padding: "12px",
-                      background: "#fafafa",
-                      borderRadius: "12px",
-                      color: "#000",
-                      border: "1px solid #e5e7eb",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      alignItems: "flex-start",
                     }}
                   >
-                    Note: {order.note}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: "clamp(15px, 1.6vw, 20px)",
+                          fontWeight: 800,
+                          color: "#000",
+                          lineHeight: 1.2,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Table {order.table} • {order.room}
+                      </div>
+                      <div
+                        style={{
+                          color: "#555",
+                          marginTop: "2px",
+                          fontSize: "clamp(11px, 1vw, 13px)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {formatElapsed(order.createdAt, now)}
+                      </div>
+                    </div>
+
+                    <StatusBadge status={orderStatus} />
                   </div>
-                ) : null}
-              </div>
-            ))
+
+                  <div
+                    className="reception-card-items"
+                    style={{
+                      padding: "12px",
+                      background: "#fafafa",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "10px",
+                      color: "#000",
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 6,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                  >
+                    {order.items.map((item) => (
+                      <div
+                        key={`${order.id}-${item.name}`}
+                        style={{
+                          fontSize: "clamp(13px, 1.2vw, 15px)",
+                          lineHeight: 1.5,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <span style={{ fontWeight: 800 }}>{item.qty}x </span>
+                        <span>{item.name}</span>
+                        {(item.extras || []).map((extra) => (
+                          <span key={extra} style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px", fontWeight: 600 }}>
+                            * {extra}
+                          </span>
+                        ))}
+                        {item.note ? (
+                          <span style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px" }}>
+                            Note: {item.note}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  {order.note ? (
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        background: "#f3f4f6",
+                        borderRadius: "8px",
+                        color: "#000",
+                        fontSize: "clamp(11px, 1vw, 13px)",
+                        fontWeight: 600,
+                        lineHeight: 1.35,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {order.note}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </div>
         <UndoBar message={undoMessage} onUndo={performUndo} />

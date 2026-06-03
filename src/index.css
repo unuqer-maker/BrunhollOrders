@@ -362,4 +362,51 @@ textarea {
     max-width: 100vw;
     overflow-x: hidden;
   }
+
+  /* ── Reception cards: single column on phone portrait ── */
+  .reception-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Reception order cards responsive grid ── */
+.reception-cards-grid {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.reception-empty-card {
+  grid-column: 1 / -1;
+}
+
+.reception-card {
+  padding: 16px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.reception-card-items {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Reception grid breakpoints */
+@media (max-width: 1600px) {
+  .reception-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .reception-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .reception-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

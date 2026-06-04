@@ -1212,24 +1212,46 @@ if (mode === "bar" && !selectedTable) {
                             </div>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => toggleBarOrderOk(order.table, order.id)}
-                            style={{
-                              padding: "10px 14px",
-                              borderRadius: "10px",
-                              border: "1px solid #d1d5db",
-                              background: orderDone ? "#d1d5db" : "white",
-                              color: "#000",
-                              cursor: "pointer",
-                              fontWeight: 800,
-                              fontSize: "14px",
-                              flexShrink: 0,
-                              minHeight: "44px",
-                            }}
-                          >
-                            OK
-                          </button>
+                          <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                openTable(order.table);
+                                startComposeForRoom(order.room);
+                              }}
+                              style={{
+                                padding: "10px 12px",
+                                borderRadius: "10px",
+                                border: "1px solid #93c5fd",
+                                background: "#dbeafe",
+                                color: "#000",
+                                cursor: "pointer",
+                                fontWeight: 800,
+                                fontSize: "14px",
+                                minHeight: "44px",
+                              }}
+                            >
+                              + Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleBarOrderOk(order.table, order.id)}
+                              style={{
+                                padding: "10px 14px",
+                                borderRadius: "10px",
+                                border: "1px solid #d1d5db",
+                                background: orderDone ? "#d1d5db" : "white",
+                                color: "#000",
+                                cursor: "pointer",
+                                fontWeight: 800,
+                                fontSize: "14px",
+                                flexShrink: 0,
+                                minHeight: "44px",
+                              }}
+                            >
+                              OK
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ display: "grid", gap: "6px" }}>
@@ -1417,23 +1439,44 @@ if (mode === "bar" && !selectedTable) {
                           </div>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => toggleBarOrderOk(order.table, order.id)}
-                          style={{
-                            padding: "10px 16px",
-                            borderRadius: "10px",
-                            border: "1px solid #d1d5db",
-                            background: orderDone ? "#d1d5db" : "white",
-                            color: "#000",
-                            cursor: "pointer",
-                            fontWeight: 800,
-                            fontSize: "15px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          OK
-                        </button>
+                        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openTable(order.table);
+                              startComposeForRoom(order.room);
+                            }}
+                            style={{
+                              padding: "10px 14px",
+                              borderRadius: "10px",
+                              border: "1px solid #93c5fd",
+                              background: "#dbeafe",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 800,
+                              fontSize: "15px",
+                            }}
+                          >
+                            + Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleBarOrderOk(order.table, order.id)}
+                            style={{
+                              padding: "10px 16px",
+                              borderRadius: "10px",
+                              border: "1px solid #d1d5db",
+                              background: orderDone ? "#d1d5db" : "white",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 800,
+                              fontSize: "15px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            OK
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{ display: "grid", gap: "6px" }}>

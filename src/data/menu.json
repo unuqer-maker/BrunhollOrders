@@ -101,27 +101,6 @@
           ]
         },
         {
-          "key": "sides",
-          "label": "Sides",
-          "zone": "kitchen",
-          "items": [
-            {
-              "id": "soup_or_salad",
-              "name": "Soup or Salad",
-              "sort": 10.0,
-              "zones": "kitchen",
-              "allowItemNote": true
-            },
-            {
-              "id": "soup_and_salad",
-              "name": "Soup and Salad",
-              "sort": 11.0,
-              "zones": "kitchen",
-              "allowItemNote": true
-            }
-          ]
-        },
-        {
           "key": "fries",
           "label": "Fries",
           "zone": "kitchen",
@@ -173,74 +152,25 @@
       ]
     },
     {
-      "key": "dessert",
-      "label": "Dessert",
+      "key": "sides",
+      "label": "Sides",
       "subcategories": [
         {
-          "key": "specials",
-          "label": "Specials",
-          "zone": "kitchen",
-          "items": [
-            {
-              "id": "chef_dessert",
-              "name": "Chef Dessert",
-              "sort": 10.0,
-              "zones": "kitchen,bar",
-              "allowItemNote": false
-            }
-          ]
-        },
-        {
-          "key": "ice-cream",
-          "label": "Ice Cream",
+          "key": "soup",
+          "label": "Soup",
           "zone": "bar",
           "items": [
             {
-              "id": "ice_cream_1",
-              "name": "Ice Cream 1 Scoop",
+              "id": "soup_or_salad",
+              "name": "Soup or Salad",
               "sort": 10.0,
               "zones": "bar",
               "allowItemNote": false
             },
             {
-              "id": "ice_cream_2",
-              "name": "Ice Cream 2 Scoops",
-              "sort": 20.0,
-              "zones": "bar",
-              "allowItemNote": false
-            },
-            {
-              "id": "ice_cream_3",
-              "name": "Ice Cream 3 Scoops",
-              "sort": 30.0,
-              "zones": "bar",
-              "allowItemNote": false
-            },
-            {
-              "id": "ice_waffle_1",
-              "name": "Ice Cream Waffle 1 Scoop",
-              "sort": 40.0,
-              "zones": "bar",
-              "allowItemNote": false
-            },
-            {
-              "id": "ice_waffle_2",
-              "name": "Ice Cream Waffle 2 Scoops",
-              "sort": 50.0,
-              "zones": "bar",
-              "allowItemNote": false
-            },
-            {
-              "id": "ice_waffle_3",
-              "name": "Ice Cream Waffle 3 Scoops",
-              "sort": 60.0,
-              "zones": "bar",
-              "allowItemNote": false
-            },
-            {
-              "id": "milkshake",
-              "name": "Milkshake",
-              "sort": 70.0,
+              "id": "soup_and_salad",
+              "name": "Soup and Salad",
+              "sort": 11.0,
               "zones": "bar",
               "allowItemNote": false
             }
@@ -337,6 +267,41 @@
             {
               "id": "sauvblanc1_wine",
               "name": "Sauvignon Blanc Bottle",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "red-wine",
+          "label": "Red Wine",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "cabernet_wine",
+              "name": "Cabernet Sauvignon 1/4",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "nero_wine",
+              "name": "Montalto Nero d'Avola 1/4",
+              "sort": 20.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "cabernet1_wine",
+              "name": "Cabernet Sauvignon Bottle",
+              "sort": 40.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "nero1_wine",
+              "name": "Montalto Nero d'Avola Bottle",
               "sort": 40.0,
               "zones": "bar",
               "allowItemNote": false
@@ -475,37 +440,78 @@
               "allowItemNote": false
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "key": "dessert",
+      "label": "Dessert",
+      "subcategories": [
         {
-          "key": "red-wine",
-          "label": "Red Wine",
+          "key": "specials",
+          "label": "Specials",
           "zone": "bar",
           "items": [
             {
-              "id": "cabernet_wine",
-              "name": "Cabernet Sauvignon 1/4",
+              "id": "chef_dessert",
+              "name": "Chef Dessert",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            }
+          ]
+        },
+        {
+          "key": "ice-cream",
+          "label": "Ice Cream",
+          "zone": "bar",
+          "items": [
+            {
+              "id": "ice_cream_1",
+              "name": "Ice Cream 1 Scoop",
+              "sort": 10.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_cream_2",
+              "name": "Ice Cream 2 Scoops",
               "sort": 20.0,
               "zones": "bar",
               "allowItemNote": false
             },
             {
-              "id": "nero_wine",
-              "name": "Montalto Nero d'Avola 1/4",
-              "sort": 20.0,
+              "id": "ice_cream_3",
+              "name": "Ice Cream 3 Scoops",
+              "sort": 30.0,
               "zones": "bar",
               "allowItemNote": false
             },
             {
-              "id": "cabernet1_wine",
-              "name": "Cabernet Sauvignon Bottle",
+              "id": "ice_waffle_1",
+              "name": "Ice Cream Waffle 1 Scoop",
               "sort": 40.0,
               "zones": "bar",
               "allowItemNote": false
             },
             {
-              "id": "nero1_wine",
-              "name": "Montalto Nero d'Avola Bottle",
-              "sort": 40.0,
+              "id": "ice_waffle_2",
+              "name": "Ice Cream Waffle 2 Scoops",
+              "sort": 50.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "ice_waffle_3",
+              "name": "Ice Cream Waffle 3 Scoops",
+              "sort": 60.0,
+              "zones": "bar",
+              "allowItemNote": false
+            },
+            {
+              "id": "milkshake",
+              "name": "Milkshake",
+              "sort": 70.0,
               "zones": "bar",
               "allowItemNote": false
             }

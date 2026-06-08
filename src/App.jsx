@@ -158,10 +158,19 @@ function getActiveItems(items) {
   return items.filter((item) => item.status !== "PICKED UP");
 }
 
+const KITCHEN_EXCLUDED_SUBCATEGORIES = new Set(["Sides", "Specials", "Fries"]);
+
+function isKitchenTracked(name) {
+  if (getItemZone(name) !== "kitchen") return false;
+  const menuItem = MENU_ITEMS.find((mi) => mi.name === name);
+  if (menuItem && KITCHEN_EXCLUDED_SUBCATEGORIES.has(menuItem.subcategoryLabel)) return false;
+  return true;
+}
+
 function getKitchenItems(items) {
   return items.filter(
     (item) =>
-      item.status !== "PICKED UP" && getItemZone(item.id || item.name) === "kitchen"
+      item.status !== "PICKED UP" && item.status !== "PICKED" && isKitchenTracked(item.id || item.name)
   );
 }
 
@@ -169,6 +178,7 @@ function shortStatus(status) {
   if (status === "NEW") return "NEW";
   if (status === "IN PREPARATION") return "IN PREP";
   if (status === "READY") return "RDY";
+  if (status === "PICKED") return "PCKD";
   if (status === "PICKED UP") return "DONE";
   return status;
 }
@@ -184,7 +194,8 @@ function formatElapsed(createdAt, now) {
 function getNextStatus(status) {
   if (status === "NEW") return "IN PREPARATION";
   if (status === "IN PREPARATION") return "READY";
-  if (status === "READY") return "PICKED UP";
+  if (status === "READY") return "PICKED";
+  if (status === "PICKED") return "READY";
   return "NEW";
 }
 
@@ -193,6 +204,7 @@ function getOrderStatus(items) {
   if (items.every((item) => item.status === "PICKED UP")) return "PICKED UP";
   if (items.some((item) => item.status === "READY")) return "READY";
   if (items.some((item) => item.status === "IN PREPARATION")) return "IN PREPARATION";
+  if (items.some((item) => item.status === "PICKED")) return "PICKED";
   return "NEW";
 }
 
@@ -201,6 +213,7 @@ function getStatusColors(status) {
   if (status === "NEW") return { background: "#dbeafe", color: "#000" };
   if (status === "IN PREPARATION" || status === "IN PREP") return { background: "#fde68a", color: "#000" };
   if (status === "READY" || status === "RDY") return { background: "#dcfce7", color: "#000" };
+  if (status === "PICKED" || status === "PCKD") return { background: "#d1d5db", color: "#6b7280" };
   if (status === "PICKED UP" || status === "DONE") return { background: "#e5e7eb", color: "#000" };
   if (status === "ARCHIVED") return { background: "#f3f4f6", color: "#000" };
   if (status === "EMPTY") return { background: "#f3f4f6", color: "#000" };
@@ -619,6 +632,7 @@ function App() {
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
+  const [barCollapsed, setBarCollapsed] = useState(local.current?.barCollapsed ?? {});
   const undoStackRef = useRef([]);
 
   const recordUndo = (snapshot, message) => {
@@ -816,14 +830,18 @@ function App() {
   const kitchenOrders = useMemo(() => {
     return allOrders
       .map((order) => {
-        const kitchenItems = getKitchenItems(order.items);
+        const allKitchen = order.items.filter(
+          (item) => item.status !== "PICKED UP" && getItemZone(item.id || item.name) === "kitchen"
+        );
+        const visibleItems = getKitchenItems(order.items);
         return {
           ...order,
-          kitchenItems,
-          kitchenStatus: getOrderStatus(kitchenItems),
+          allKitchenItems: allKitchen,
+          kitchenItems: visibleItems,
+          kitchenStatus: getOrderStatus(visibleItems),
         };
       })
-      .filter((order) => order.kitchenItems.length > 0)
+      .filter((order) => order.allKitchenItems.length > 0)
       .sort((a, b) => a.createdAt - b.createdAt);
   }, [allOrders]);
 
@@ -853,10 +871,24 @@ function App() {
       });
     });
 
-    return Object.entries(counts)
+    const flat = Object.entries(counts)
       .map(([name, qty]) => ({ name, qty }))
       .filter((item) => item.qty > 0)
       .sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name));
+
+    const catOrder = TOP_CATEGORIES.flatMap((c) => c.subcategories.map((s) => s.label));
+    const groups = {};
+    flat.forEach((item) => {
+      const menuItem = MENU_ITEMS.find((mi) => mi.name === item.name);
+      const catLabel = menuItem?.subcategoryLabel || "Other";
+      if (!groups[catLabel]) {
+        groups[catLabel] = { categoryLabel: catLabel, items: [] };
+      }
+      groups[catLabel].items.push(item);
+    });
+    const ordered = catOrder.filter((label) => groups[label]).map((label) => groups[label]);
+    const others = Object.keys(groups).filter((label) => !catOrder.includes(label)).map((label) => groups[label]);
+    return [...ordered, ...others];
   }, [kitchenOrders]);
 
   const receptionOrders = useMemo(() => {
@@ -913,7 +945,7 @@ function App() {
 
   const openTable = (table) => {
     setSelectedTable(table);
-    setTableStage("overview");
+    setShowAddRoomModal(true);
     setSelectedRoom(null);
     resetComposeDraft();
   };
@@ -1025,6 +1057,7 @@ function App() {
       };
     });
 
+    setSelectedTable(null);
     setTableStage("overview");
     setSelectedRoom(null);
     resetComposeDraft();
@@ -1094,11 +1127,8 @@ if (mode === "bar" && !selectedTable) {
         <div
           style={{
             ...pageStyle,
-            height: "100vh",
-            overflow: "hidden",
+            minHeight: "100vh",
             boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
             padding: "8px 10px 0",
           }}
         >
@@ -1107,7 +1137,7 @@ if (mode === "bar" && !selectedTable) {
           </TopBar>
           {showResetModal && <ResetModal onClose={() => setShowResetModal(false)} onConfirm={clearAllState} />}
 
-          <div className="bar-home-layout-mobile mobile-safe-container">
+          <div className="bar-home-layout-mobile">
             <div className="table-floor-plan">
               {TABLE_POSITIONS.map(({ id, row, col }) => {
                 const tone = getTableTone(id);
@@ -1120,18 +1150,33 @@ if (mode === "bar" && !selectedTable) {
                     style={{
                       gridRow: row,
                       gridColumn: col,
+                      position: "relative",
                     }}
                   >
                     <span className="table-number">{id}</span>
-                    <span
-                      className="table-tone"
-                      style={{
-                        background: tone.background,
-                      }}
-                    >
-                      <span>{tone.label}</span>
-                      <span>{ordersCount}</span>
-                    </span>
+                    {ordersCount > 0 && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: "8px",
+                          right: "8px",
+                          background: tone.background,
+                          color: tone.color || "#000",
+                          fontWeight: 800,
+                          fontSize: "clamp(10px, 1.6vmin, 15px)",
+                          minWidth: "clamp(20px, 3.2vmin, 28px)",
+                          height: "clamp(20px, 3.2vmin, 28px)",
+                          borderRadius: "clamp(4px, 0.8vmin, 8px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "1px solid #d1d5db",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {ordersCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1162,10 +1207,31 @@ if (mode === "bar" && !selectedTable) {
                   barOverviewOrders.map((order) => {
                     const queueEntry = getBarQueueEntry(order.table, order.id);
                     const orderDone = queueEntry.orderOk;
+                    const orderKey = `${order.table}-${order.id}`;
+                    const collapsed = barCollapsed[orderKey];
+                    const isFoodOrder = order.queueItems.some((item) => {
+                      const mi = MENU_ITEMS.find((m) => m.name === item.name);
+                      return mi?.topCategoryLabel === "Food";
+                    });
+                    const timerFrozen = orderDone && !isFoodOrder;
+
+                    const CATEGORY_COLORS = {
+                      "Food": "#dbeafe",
+                      "Dessert": "#fed7aa",
+                      "Drink Menu": "#e9d5ff",
+                      "Cold and Hot": "#fecaca",
+                      "Sides": "#fce7f3",
+                    };
+
+                    const getCatColor = (catLabel) => CATEGORY_COLORS[catLabel] || "#f3f4f6";
+
+                    const toggleBarCollapse = (key) => {
+                      setBarCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+                    };
 
                     return (
                       <div
-                        key={`${order.table}-${order.id}`}
+                        key={orderKey}
                         style={{
                           ...cardStyle,
                           width: "100%",
@@ -1174,127 +1240,170 @@ if (mode === "bar" && !selectedTable) {
                           padding: "12px",
                           color: "#000",
                           display: "grid",
-                          gap: "8px",
+                          gap: collapsed ? "4px" : "8px",
                           background: orderDone ? "#e5e7eb" : "white",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => toggleBarCollapse(orderKey)}
+                      >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          alignItems: "center",
+                          flexWrap: "wrap",
                         }}
                       >
                         <div
                           style={{
                             display: "flex",
-                            justifyContent: "space-between",
-                            gap: "8px",
-                            alignItems: "flex-start",
-                            flexWrap: "wrap",
+                            alignItems: "center",
+                            gap: "6px",
+                            flex: 1,
+                            minWidth: 0,
                           }}
                         >
-                          <button
-                            type="button"
-                            onClick={() => openTable(order.table)}
+                          <span
                             style={{
-                              border: "none",
-                              background: "transparent",
-                              padding: 0,
-                              cursor: "pointer",
-                              textAlign: "left",
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              background: "#dbeafe",
                               color: "#000",
-                              flex: 1,
-                              minWidth: 0,
+                              fontSize: "14px",
+                              fontWeight: 800,
+                              border: "1px solid #93c5fd",
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#000" }}>
-                              Table {order.table}
-                            </div>
-                            <div style={{ fontSize: "14px", fontWeight: 700, color: "#000", marginTop: "1px" }}>
-                              {order.room}
-                            </div>
-                            <div style={{ color: "#000", marginTop: "2px", fontSize: "11px", fontWeight: 400 }}>
-                              {formatElapsed(order.createdAt, now)}
-                            </div>
+                            {order.table}
+                          </span>
+                          <span
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              background: "#e8f5e9",
+                              color: "#000",
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              border: "1px solid #a5d6a7",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {order.room}
+                          </span>
+                          <span style={{ color: "#000", fontSize: "11px", fontWeight: 400, whiteSpace: "nowrap" }}>
+                            {timerFrozen ? formatElapsed(order.createdAt, order.createdAt) : formatElapsed(order.createdAt, now)}
+                          </span>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "6px", flexShrink: 0, alignItems: "center" }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTable(order.table);
+                              startComposeForRoom(order.room);
+                            }}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "10px",
+                              border: "1px solid #93c5fd",
+                              background: "#dbeafe",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 800,
+                              fontSize: "13px",
+                            }}
+                          >
+                            + Add
                           </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBarOrderOk(order.table, order.id);
+                            }}
+                            style={{
+                              padding: "8px 14px",
+                              borderRadius: "10px",
+                              border: "1px solid #d1d5db",
+                              background: orderDone ? "#d1d5db" : "white",
+                              color: "#000",
+                              cursor: "pointer",
+                              fontWeight: 800,
+                              fontSize: "13px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            OK
+                          </button>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              lineHeight: 1,
+                              color: "#9ca3af",
+                              flexShrink: 0,
+                              transition: "transform 0.15s ease",
+                              transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                              display: "flex",
+                              alignItems: "center",
+                              cursor: "pointer",
+                            }}
+                            onClick={(e) => { e.stopPropagation(); toggleBarCollapse(orderKey); }}
+                          >
+                            ▼
+                          </span>
+                        </div>
+                      </div>
 
-                          <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                openTable(order.table);
-                                startComposeForRoom(order.room);
-                              }}
-                              style={{
-                                padding: "10px 12px",
-                                borderRadius: "10px",
-                                border: "1px solid #93c5fd",
-                                background: "#dbeafe",
-                                color: "#000",
-                                cursor: "pointer",
-                                fontWeight: 800,
-                                fontSize: "14px",
-                                minHeight: "44px",
-                              }}
-                            >
-                              + Add
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleBarOrderOk(order.table, order.id)}
-                              style={{
-                                padding: "10px 14px",
-                                borderRadius: "10px",
-                                border: "1px solid #d1d5db",
-                                background: orderDone ? "#d1d5db" : "white",
-                                color: "#000",
-                                cursor: "pointer",
-                                fontWeight: 800,
-                                fontSize: "14px",
-                                flexShrink: 0,
-                                minHeight: "44px",
-                              }}
-                            >
-                              OK
-                            </button>
+                        {!collapsed && (
+                          <div style={{ display: "grid", gap: "6px" }}>
+                            {order.queueItems.length === 0 ? (
+                              <div style={{ color: "#000", fontSize: "13px" }}>No bar items on this ticket</div>
+                            ) : (
+                              order.queueItems.map((item) => {
+                                const itemDone = Boolean(queueEntry.itemsDone[String(item.sourceIndex)]);
+                                const catLabel = (MENU_ITEMS.find((m) => m.name === item.name) || {}).topCategoryLabel;
+                                const catBg = getCatColor(catLabel);
+
+                                return (
+                                  <button
+                                    key={`${order.id}-${item.sourceIndex}-${item.name}`}
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); toggleBarItemDone(order.table, order.id, item.sourceIndex); }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "10px",
+                                      width: "100%",
+                                      textAlign: "left",
+                                      border: "1px solid #d1d5db",
+                                      borderRadius: "10px",
+                                      padding: "10px 12px",
+                                      background: itemDone ? "#166534" : catBg,
+                                      color: itemDone ? "#fff" : "#000",
+                                      cursor: "pointer",
+                                      fontSize: "14px",
+                                      fontWeight: 600,
+                                      lineHeight: 1.3,
+                                      minHeight: "44px",
+                                      borderLeft: itemDone ? "4px solid #22c55e" : "1px solid #d1d5db",
+                                      opacity: itemDone ? 1 : 0.7,
+                                    }}
+                                  >
+                                    <span style={{ fontSize: "16px", width: "22px", flexShrink: 0, color: itemDone ? "#fff" : "#000" }}>
+                                      {itemDone ? "✓" : "□"}
+                                    </span>
+                                    <span>
+                                      {item.qty}x {item.name}
+                                    </span>
+                                  </button>
+                                );
+                              })
+                            )}
                           </div>
-                        </div>
-
-                        <div style={{ display: "grid", gap: "6px" }}>
-                          {order.queueItems.length === 0 ? (
-                            <div style={{ color: "#000", fontSize: "13px" }}>No bar items on this ticket</div>
-                          ) : (
-                            order.queueItems.map((item) => {
-                              const itemDone = Boolean(queueEntry.itemsDone[String(item.sourceIndex)]);
-
-                              return (
-                                <button
-                                  key={`${order.id}-${item.sourceIndex}-${item.name}`}
-                                  type="button"
-                                  onClick={() => toggleBarItemDone(order.table, order.id, item.sourceIndex)}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "10px",
-                                    width: "100%",
-                                    textAlign: "left",
-                                    border: "1px solid #d1d5db",
-                                    borderRadius: "10px",
-                                    padding: "10px 12px",
-                                    background: itemDone ? "#dcfce7" : "white",
-                                    color: "#000",
-                                    cursor: "pointer",
-                                    fontSize: "14px",
-                                    fontWeight: 600,
-                                    lineHeight: 1.3,
-                                    minHeight: "44px",
-                                  }}
-                                >
-                                  <span style={{ fontSize: "16px", width: "22px", flexShrink: 0 }}>
-                                    {itemDone ? "✓" : "□"}
-                                  </span>
-                                  <span>
-                                    {item.qty}x {item.name}
-                                  </span>
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
+                        )}
                       </div>
                     );
                   })
@@ -1348,18 +1457,33 @@ if (mode === "bar" && !selectedTable) {
                     style={{
                       gridRow: row,
                       gridColumn: col,
+                      position: "relative",
                     }}
                   >
                     <span className="table-number">{id}</span>
-                    <span
-                      className="table-tone"
-                      style={{
-                        background: tone.background,
-                      }}
-                    >
-                      <span>{tone.label}</span>
-                      <span>{ordersCount}</span>
-                    </span>
+                    {ordersCount > 0 && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: "8px",
+                          right: "8px",
+                          background: tone.background,
+                          color: tone.color || "#000",
+                          fontWeight: 800,
+                          fontSize: "clamp(11px, 1.6vmin, 17px)",
+                          minWidth: "clamp(22px, 3.2vmin, 34px)",
+                          height: "clamp(22px, 3.2vmin, 34px)",
+                          borderRadius: "clamp(4px, 0.8vmin, 10px)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "1px solid #d1d5db",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {ordersCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1391,10 +1515,26 @@ if (mode === "bar" && !selectedTable) {
                 barOverviewOrders.map((order) => {
                   const queueEntry = getBarQueueEntry(order.table, order.id);
                   const orderDone = queueEntry.orderOk;
+                  const orderKey = `${order.table}-${order.id}`;
+                  const collapsed = barCollapsed[orderKey];
+
+                  const CATEGORY_COLORS = {
+                    "Food": "#dbeafe",
+                    "Dessert": "#fed7aa",
+                    "Drink Menu": "#e9d5ff",
+                    "Cold and Hot": "#fecaca",
+                    "Sides": "#fce7f3",
+                  };
+
+                  const getCatColor = (catLabel) => CATEGORY_COLORS[catLabel] || "#f3f4f6";
+
+                  const toggleBarCollapse = (key) => {
+                    setBarCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+                  };
 
                   return (
                     <div
-                      key={`${order.table}-${order.id}`}
+                      key={orderKey}
                       style={{
                         ...cardStyle,
                         width: "100%",
@@ -1403,122 +1543,169 @@ if (mode === "bar" && !selectedTable) {
                         padding: "14px",
                         color: "#000",
                         display: "grid",
-                        gap: "10px",
+                        gap: collapsed ? "4px" : "10px",
                         background: orderDone ? "#e5e7eb" : "white",
+                        cursor: "pointer",
                       }}
+                      onClick={() => toggleBarCollapse(orderKey)}
                     >
                       <div
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
                           gap: "10px",
-                          alignItems: "flex-start",
+                          alignItems: "center",
                           flexWrap: "wrap",
                         }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => openTable(order.table)}
+                        <div
                           style={{
-                            border: "none",
-                            background: "transparent",
-                            padding: 0,
-                            cursor: "pointer",
-                            textAlign: "left",
-                            color: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            flex: 1,
+                            minWidth: 0,
                           }}
                         >
-                          <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>
-                            Table {order.table}
-                          </div>
-                          <div style={{ fontSize: "16px", fontWeight: 700, color: "#000", marginTop: "2px" }}>
+                          <span
+                            style={{
+                              padding: "5px 12px",
+                              borderRadius: "8px",
+                              background: "#dbeafe",
+                              color: "#000",
+                              fontSize: "15px",
+                              fontWeight: 800,
+                              border: "1px solid #93c5fd",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {order.table}
+                          </span>
+                          <span
+                            style={{
+                              padding: "5px 12px",
+                              borderRadius: "8px",
+                              background: "#e8f5e9",
+                              color: "#000",
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              border: "1px solid #a5d6a7",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             {order.room}
-                          </div>
-                          <div style={{ color: "#000", marginTop: "4px", fontSize: "12px", fontWeight: 400 }}>
+                          </span>
+                          <span style={{ color: "#000", fontSize: "12px", fontWeight: 400, whiteSpace: "nowrap" }}>
                             {formatElapsed(order.createdAt, now)}
-                          </div>
-                        </button>
+                          </span>
+                        </div>
 
-                        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                        <div style={{ display: "flex", gap: "6px", flexShrink: 0, alignItems: "center" }}>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               openTable(order.table);
                               startComposeForRoom(order.room);
                             }}
                             style={{
-                              padding: "10px 14px",
+                              padding: "8px 14px",
                               borderRadius: "10px",
                               border: "1px solid #93c5fd",
                               background: "#dbeafe",
                               color: "#000",
                               cursor: "pointer",
                               fontWeight: 800,
-                              fontSize: "15px",
+                              fontSize: "14px",
                             }}
                           >
                             + Add
                           </button>
                           <button
                             type="button"
-                            onClick={() => toggleBarOrderOk(order.table, order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBarOrderOk(order.table, order.id);
+                            }}
                             style={{
-                              padding: "10px 16px",
+                              padding: "8px 16px",
                               borderRadius: "10px",
                               border: "1px solid #d1d5db",
                               background: orderDone ? "#d1d5db" : "white",
                               color: "#000",
                               cursor: "pointer",
                               fontWeight: 800,
-                              fontSize: "15px",
+                              fontSize: "14px",
                               flexShrink: 0,
                             }}
                           >
                             OK
                           </button>
+                          <span
+                            style={{
+                              fontSize: "16px",
+                              lineHeight: 1,
+                              color: "#9ca3af",
+                              flexShrink: 0,
+                              transition: "transform 0.15s ease",
+                              transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                              display: "flex",
+                              alignItems: "center",
+                              cursor: "pointer",
+                            }}
+                            onClick={(e) => { e.stopPropagation(); toggleBarCollapse(orderKey); }}
+                          >
+                            ▼
+                          </span>
                         </div>
                       </div>
 
-                      <div style={{ display: "grid", gap: "6px" }}>
-                        {order.queueItems.length === 0 ? (
-                          <div style={{ color: "#000", fontSize: "14px" }}>No bar items on this ticket</div>
-                        ) : (
-                          order.queueItems.map((item) => {
-                            const itemDone = Boolean(queueEntry.itemsDone[String(item.sourceIndex)]);
+                      {!collapsed && (
+                        <div style={{ display: "grid", gap: "6px" }}>
+                          {order.queueItems.length === 0 ? (
+                            <div style={{ color: "#000", fontSize: "14px" }}>No bar items on this ticket</div>
+                          ) : (
+                            order.queueItems.map((item) => {
+                              const itemDone = Boolean(queueEntry.itemsDone[String(item.sourceIndex)]);
+                              const catLabel = (MENU_ITEMS.find((m) => m.name === item.name) || {}).topCategoryLabel;
+                              const catBg = getCatColor(catLabel);
 
-                            return (
-                              <button
-                                key={`${order.id}-${item.sourceIndex}-${item.name}`}
-                                type="button"
-                                onClick={() => toggleBarItemDone(order.table, order.id, item.sourceIndex)}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "10px",
-                                  width: "100%",
-                                  textAlign: "left",
-                                  border: "1px solid #d1d5db",
-                                  borderRadius: "10px",
-                                  padding: "10px 12px",
-                                  background: itemDone ? "#dcfce7" : "white",
-                                  color: "#000",
-                                  cursor: "pointer",
-                                  fontSize: "15px",
-                                  fontWeight: 600,
-                                  lineHeight: 1.3,
-                                }}
-                              >
-                                <span style={{ fontSize: "18px", width: "22px", flexShrink: 0 }}>
-                                  {itemDone ? "✓" : "□"}
-                                </span>
-                                <span>
-                                  {item.qty}x {item.name}
-                                </span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
+                              return (
+                                <button
+                                  key={`${order.id}-${item.sourceIndex}-${item.name}`}
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleBarItemDone(order.table, order.id, item.sourceIndex); }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "10px",
+                                    width: "100%",
+                                    textAlign: "left",
+                                    border: "1px solid #d1d5db",
+                                    borderRadius: "10px",
+                                    padding: "10px 12px",
+                                    background: itemDone ? "#166534" : catBg,
+                                    color: itemDone ? "#fff" : "#000",
+                                    cursor: "pointer",
+                                    fontSize: "15px",
+                                    fontWeight: 600,
+                                    lineHeight: 1.3,
+                                    borderLeft: itemDone ? "4px solid #22c55e" : "1px solid #d1d5db",
+                                    opacity: itemDone ? 1 : 0.7,
+                                  }}
+                                >
+                                  <span style={{ fontSize: "18px", width: "22px", flexShrink: 0, color: itemDone ? "#fff" : "#000" }}>
+                                    {itemDone ? "✓" : "□"}
+                                  </span>
+                                  <span>
+                                    {item.qty}x {item.name}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -2603,35 +2790,31 @@ if (mode === "kitchen") {
 
         <div
           style={{
-            ...cardStyle,
-            padding: "6px 10px",
             marginBottom: "8px",
-            border: "1px solid #d1d5db",
+            display: "flex",
+            gap: "10px",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "4px",
           }}
         >
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            {kitchenSummary.length === 0 ? (
-              <div style={{ color: "#000", fontSize: "13px" }}>No active items</div>
-            ) : (
-              kitchenSummary.map((item) => (
-                <div
-                  key={item.name}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: "999px",
-                    background: "#f3f4f6",
-                    border: "1px solid #d1d5db",
-                    fontWeight: 700,
-                    color: "#000",
-                    fontSize: "13px",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {item.name} • {item.qty}
+          {kitchenSummary.length === 0 ? (
+            <div style={{...cardStyle, padding: "6px 10px", border: "1px solid #d1d5db", color: "#000", fontSize: "13px", flexShrink: 0}}>No active items</div>
+          ) : (
+            kitchenSummary.map((group, gi) => {
+              const colors = ["#dbeafe","#dcfce7","#fef9c3","#ffedd5","#e0e7ff","#f3e8ff","#d1fae5","#fee2e2","#e0f2fe","#fef3c7","#ede9fe","#fce7f3"];
+              const hc = colors[gi % colors.length];
+              return (
+              <div key={group.categoryLabel} style={{...cardStyle, border: "1px solid #d1d5db", flexShrink: 0, minWidth: "160px", display: "flex", flexDirection: "column"}}>
+                <div style={{fontWeight:800,fontSize:"11px",color:"#000",padding:"4px 10px",background:hc,borderRadius:"18px 18px 0 0",borderBottom:"1px solid #d1d5db",textAlign:"center",letterSpacing:"0.3px"}}>{group.categoryLabel}</div>
+                <div style={{display:"flex",gap:"4px",flexWrap:"wrap",padding:"6px 8px"}}>
+                  {group.items.map(item => (
+                    <div key={item.name} style={{padding:"4px 8px",borderRadius:"999px",background:"#f3f4f6",border:"1px solid #d1d5db",fontWeight:700,color:"#000",fontSize:"12px",lineHeight:1.2}}>{item.name} • {item.qty}</div>
+                  ))}
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            );})
+          )}
         </div>
 
         <div className="kitchen-tickets-grid">
@@ -2679,7 +2862,7 @@ if (mode === "kitchen") {
                   </div>
 
                   <div style={{ display: "grid", gap: "8px" }}>
-                    {order.kitchenItems.map((item, index) => {
+                    {order.allKitchenItems.map((item, index) => {
                       const itemStatusStyle = getStatusColors(item.status);
 
                       return (
@@ -2700,7 +2883,9 @@ if (mode === "kitchen") {
                                   ? "#fff8e6"
                                   : item.status === "READY"
                                     ? "#f0fff0"
-                                    : "#f3f4f6",
+                                    : item.status === "PICKED"
+                                      ? "#e5e7eb"
+                                      : "#f3f4f6",
                             borderLeft: `5px solid ${itemStatusStyle.background}`,
                             color: "#000",
                           }}
@@ -2794,65 +2979,16 @@ if (mode === "kitchen") {
   }
 
 if (mode === "reception") {
-    const filteredOrders =
-      receptionTab === "active"
-        ? allOrders.filter((order) => order.orderStatus !== "PICKED UP")
-        : receptionOrders;
-
-    const activeCount = allOrders.filter((order) => order.orderStatus !== "PICKED UP").length;
-    const historyCount = receptionOrders.length;
-
     return (
       <div style={{ ...pageStyle, padding: "10px 14px" }}>
         <TopBar mode={mode} onChange={switchMode} disabled />
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px", alignItems: "center" }}>
-          {[
-            { key: "active", label: "Active Orders", count: activeCount },
-            { key: "history", label: "History 24h", count: historyCount },
-          ].map((tab) => {
-            const active = tab.key === receptionTab;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setReceptionTab(tab.key)}
-                style={{
-                  padding: "12px 18px",
-                  fontSize: "16px",
-                  borderRadius: "12px",
-                  border: active ? "1px solid #93c5fd" : "1px solid #d1d5db",
-                  background: active ? "#dbeafe" : "white",
-                  color: "#000",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  boxShadow: active ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                }}
-              >
-                <span>{tab.label}</span>
-                <span
-                  style={{
-                    padding: "2px 10px",
-                    borderRadius: "999px",
-                    background: active ? "#93c5fd" : "#e5e7eb",
-                    color: "#000",
-                    fontSize: "14px",
-                    fontWeight: 800,
-                    minWidth: "28px",
-                    textAlign: "center",
-                  }}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+        <div style={{ fontSize: "16px", fontWeight: 800, color: "#000", marginBottom: "14px" }}>
+          History 24h ({receptionOrders.length})
         </div>
 
         <div className="reception-cards-grid">
-          {filteredOrders.length === 0 ? (
+          {receptionOrders.length === 0 ? (
             <div
               className="reception-empty-card"
               style={{ ...cardStyle, padding: "20px", color: "#000", border: "1px solid #d1d5db" }}
@@ -2860,7 +2996,7 @@ if (mode === "reception") {
               No orders in this view
             </div>
           ) : (
-            filteredOrders.map((order) => {
+            receptionOrders.map((order) => {
               const orderStatus = getOrderStatus(order.items);
               const statusColors = getStatusColors(orderStatus);
 
@@ -2874,7 +3010,7 @@ if (mode === "reception") {
                     borderTop: `4px solid ${statusColors.background}`,
                     display: "flex",
                     flexDirection: "column",
-                    gap: "10px",
+                    gap: "8px",
                     minWidth: 0,
                     minHeight: 0,
                   }}
@@ -2896,7 +3032,7 @@ if (mode === "reception") {
                           lineHeight: 1.25,
                         }}
                       >
-                        Room {order.room} • Table {order.table}
+                        {order.room} • Table {order.table}
                       </div>
                       <div
                         style={{
@@ -2916,15 +3052,11 @@ if (mode === "reception") {
                   <div
                     className="reception-card-items"
                     style={{
-                      padding: "12px",
+                      padding: "10px",
                       background: "#fafafa",
                       border: "1px solid #e5e7eb",
                       borderRadius: "10px",
                       color: "#000",
-                      overflow: "hidden",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 6,
-                      WebkitBoxOrient: "vertical",
                     }}
                   >
                     {order.items.map((item) => (
@@ -2932,8 +3064,8 @@ if (mode === "reception") {
                         key={`${order.id}-${item.name}`}
                         style={{
                           fontSize: "clamp(13px, 1.2vw, 15px)",
-                          lineHeight: 1.5,
-                          marginBottom: "4px",
+                          lineHeight: 1.45,
+                          marginBottom: "3px",
                         }}
                       >
                         <span style={{ fontWeight: 800 }}>{item.qty}x </span>
@@ -2955,16 +3087,17 @@ if (mode === "reception") {
                   {order.note ? (
                     <div
                       style={{
-                        padding: "8px 12px",
+                        padding: "6px 10px",
                         background: "#f3f4f6",
                         borderRadius: "8px",
                         color: "#000",
                         fontSize: "clamp(11px, 1vw, 13px)",
                         fontWeight: 600,
-                        lineHeight: 1.35,
+                        lineHeight: 1.3,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
+                        flexShrink: 0,
                       }}
                     >
                       {order.note}

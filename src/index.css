@@ -170,12 +170,18 @@ textarea {
   height: 100%;
 }
 
+@media (min-width: 769px) {
+  .table-floor-plan {
+    aspect-ratio: 4 / 5;
+    height: auto;
+    flex: none;
+    max-height: calc(100vh - 48px);
+  }
+}
+
 .table-card {
-  aspect-ratio: 1 / 1;
-  max-width: 100%;
-  max-height: 100%;
-  align-self: center;
-  justify-self: center;
+  width: 100%;
+  height: 100%;
   border-radius: clamp(10px, 2.6vmin, 26px);
   border: 1px solid #d1d5db;
   background: white;
@@ -184,9 +190,9 @@ textarea {
   color: #000;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  text-align: left;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
   padding: clamp(5px, 1.3vmin, 18px);
   overflow: hidden;
 }
@@ -195,22 +201,6 @@ textarea {
   font-size: clamp(18px, 4.5vmin, 39px);
   font-weight: 800;
   color: #000;
-}
-
-.table-tone {
-  align-self: stretch;
-  border-radius: 999px;
-  color: #000;
-  border: 1px solid #d1d5db;
-  padding: clamp(4px, 0.8vmin, 10px) clamp(5px, 1.3vmin, 16px);
-  font-size: clamp(9px, 1.6vmin, 16px);
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  display: flex;
-  justify-content: space-between;
-  gap: clamp(3px, 0.7vmin, 10px);
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 /* ── Mobile-only compose-order layout (max-width: 768px) ── */
@@ -349,18 +339,16 @@ textarea {
     flex-shrink: 0;
   }
 
-  /* Quick overview panel below tables on mobile */
+  /* Quick overview panel below tables on mobile — no nested scrolling */
   .bar-quick-overview-panel-mobile {
-    flex: 1;
-    min-height: 0;
+    flex: none;
     display: flex;
     flex-direction: column;
   }
 
-  /* ── Horizontal overflow protection ── */
-  .mobile-safe-container {
-    max-width: 100vw;
-    overflow-x: hidden;
+  .bar-quick-overview-panel-mobile .bar-quick-overview-list {
+    overflow-y: visible;
+    flex: none;
   }
 
   /* ── Reception cards: single column on phone portrait ── */
@@ -383,13 +371,16 @@ textarea {
 
 .reception-card {
   padding: 16px;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 4.2;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .reception-card-items {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 /* Reception grid breakpoints */

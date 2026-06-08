@@ -84,10 +84,27 @@ def cat_min_sort(sub_dict):
     """Return the minimum item.sort in a subcategory dict, or 0 if empty."""
     return min((i["sort"] for i in sub_dict), default=0)
 
+# Hardcoded category ordering — all unknown categories append after these
+CATEGORY_ORDER = ["Food", "Sides", "Drink Menu", "Dessert", "Cold and Hot"]
+DRINK_MENU_SUBCATEGORY_ORDER = ["Beer", "White Wine", "Red Wine", "Soda", "Water", "Spirit"]
+
+def category_sort_key(cat_label):
+    """Sort key for top-level categories. Known categories get their index, unknown go last."""
+    if cat_label in CATEGORY_ORDER:
+        return CATEGORY_ORDER.index(cat_label)
+    return 999
+
+def subcategory_sort_key(sub_label, parent_label=None):
+    """Sort key for subcategories. Drink Menu uses predefined order."""
+    if parent_label == "Drink Menu" and sub_label in DRINK_MENU_SUBCATEGORY_ORDER:
+        return DRINK_MENU_SUBCATEGORY_ORDER.index(sub_label)
+    return 999
+
 top_categories = []
-for cat_label, cat_data in sorted(tree.items(), key=lambda kv: min(cat_min_sort(sub) for sub in kv[1].values())):
+for cat_label, cat_data in sorted(tree.items(), key=lambda kv: category_sort_key(kv[0])):
     subs = []
-    for sub_label, sub_items in sorted(cat_data.items(), key=lambda kv: cat_min_sort(kv[1])):
+    the_sort_key = cat_min_sort if cat_label != "Drink Menu" else lambda sd: subcategory_sort_key(list(sd.keys())[0], cat_label)
+    for sub_label, sub_items in sorted(cat_data.items(), key=lambda kv: subcategory_sort_key(kv[0], cat_label)):
         zone = primary_zone(sub_items[0]["zones"])
         is_food = cat_label == "Food"
         menu_items = []

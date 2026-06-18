@@ -208,11 +208,22 @@ function getOrderStatus(items) {
   return "NEW";
 }
 
+function getKitchenOrderStatus(allItems, activeItems) {
+  // allItems: all kitchen items including PICKED
+  // activeItems: kitchen items excluding PICKED (from getKitchenItems)
+  // If every item is PICKED → grey card
+  if (allItems.every((item) => item.status === "PICKED")) return "PICKED";
+  // Use least completed active item
+  if (activeItems.some((item) => item.status === "NEW")) return "NEW";
+  if (activeItems.some((item) => item.status === "IN PREPARATION")) return "IN PREPARATION";
+  return "READY";
+}
+
 
 function getStatusColors(status) {
-  if (status === "NEW") return { background: "#dbeafe", color: "#000" };
-  if (status === "IN PREPARATION" || status === "IN PREP") return { background: "#fde68a", color: "#000" };
-  if (status === "READY" || status === "RDY") return { background: "#dcfce7", color: "#000" };
+  if (status === "NEW") return { background: "#ef4444", color: "#fff" };
+  if (status === "IN PREPARATION" || status === "IN PREP") return { background: "#f97316", color: "#fff" };
+  if (status === "READY" || status === "RDY") return { background: "#22c55e", color: "#fff" };
   if (status === "PICKED" || status === "PCKD") return { background: "#d1d5db", color: "#6b7280" };
   if (status === "PICKED UP" || status === "DONE") return { background: "#e5e7eb", color: "#000" };
   if (status === "ARCHIVED") return { background: "#f3f4f6", color: "#000" };
@@ -529,6 +540,329 @@ function ResetModal({ onClose, onConfirm }) {
 }
 
 
+function EditOrderModal({ currentTable, currentRoom, orderIds, onSave, onClose }) {
+  const [table, setTable] = useState(currentTable);
+  const [room, setRoom] = useState(currentRoom);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "18px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+          padding: "28px 32px",
+          maxWidth: "440px",
+          width: "90vw",
+          display: "grid",
+          gap: "16px",
+          color: "#000",
+        }}
+      >
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>Edit Order</div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>Table</div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {TABLE_POSITIONS.map((pos) => (
+              <button
+                key={pos.id}
+                type="button"
+                onClick={() => setTable(pos.id)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: table === pos.id ? "2px solid #93c5fd" : "1px solid #d1d5db",
+                  background: table === pos.id ? "#dbeafe" : "white",
+                  color: "#000",
+                  cursor: "pointer",
+                  fontWeight: table === pos.id ? 800 : 600,
+                  fontSize: "14px",
+                  minWidth: "36px",
+                  textAlign: "center",
+                }}
+              >
+                {pos.id}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>Room</div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={room}
+            onChange={(e) => setRoom(e.target.value)}
+            placeholder="Room number or label"
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "16px",
+              outline: "none",
+              fontFamily: "Arial, sans-serif",
+              color: "#000",
+            }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(table, room)}
+            disabled={!room.trim()}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: room.trim() ? "1px solid #86efac" : "1px solid #d1d5db",
+              background: room.trim() ? "#dcfce7" : "#f3f4f6",
+              color: room.trim() ? "#000" : "#9ca3af",
+              cursor: room.trim() ? "pointer" : "default",
+              fontWeight: 800,
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TableSelectModal({ currentTable, currentRoom, onSave, onClose }) {
+  const [selectedTable, setSelectedTable] = useState(currentTable);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "white",
+          borderRadius: "18px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+          padding: "28px 32px",
+          maxWidth: "440px",
+          width: "90vw",
+          display: "grid",
+          gap: "16px",
+          color: "#000",
+        }}
+      >
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>Table</div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>
+            Select new table
+          </div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {TABLE_POSITIONS.map((pos) => (
+              <button
+                key={pos.id}
+                type="button"
+                onClick={() => setSelectedTable(pos.id)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: selectedTable === pos.id ? "2px solid #93c5fd" : "1px solid #d1d5db",
+                  background: selectedTable === pos.id ? "#dbeafe" : "white",
+                  color: "#000",
+                  cursor: "pointer",
+                  fontWeight: selectedTable === pos.id ? 800 : 600,
+                  fontSize: "14px",
+                  minWidth: "36px",
+                  textAlign: "center",
+                }}
+              >
+                {pos.id}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(selectedTable, currentRoom)}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #86efac",
+              background: "#dcfce7",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 800,
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RoomEditModal({ currentRoom, onSave, onClose }) {
+  const [typed, setTyped] = useState(currentRoom);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (typed.trim()) {
+      onSave(typed.trim());
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          background: "white",
+          borderRadius: "18px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.20)",
+          padding: "28px 32px",
+          maxWidth: "440px",
+          width: "90vw",
+          display: "grid",
+          gap: "16px",
+          color: "#000",
+        }}
+      >
+        <div style={{ fontSize: "18px", fontWeight: 800, color: "#000" }}>Room</div>
+
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "#000" }}>
+            Enter room number or label
+          </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="e.g. 8A, Outside Guest"
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              fontSize: "16px",
+              outline: "none",
+              fontFamily: "Arial, sans-serif",
+              color: "#000",
+            }}
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "#000",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!typed.trim()}
+            style={{
+              padding: "8px 18px",
+              fontSize: "14px",
+              borderRadius: "10px",
+              border: typed.trim() ? "1px solid #86efac" : "1px solid #d1d5db",
+              background: typed.trim() ? "#dcfce7" : "#f3f4f6",
+              color: typed.trim() ? "#000" : "#9ca3af",
+              cursor: typed.trim() ? "pointer" : "default",
+              fontWeight: 800,
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
   const colors = getStatusColors(status);
 
@@ -541,7 +875,7 @@ function StatusBadge({ status }) {
         padding: "7px 11px",
         borderRadius: "999px",
         background: colors.background,
-        color: "#000",
+        color: colors.color,
         fontSize: "12px",
         fontWeight: 800,
         letterSpacing: "0.3px",
@@ -550,59 +884,6 @@ function StatusBadge({ status }) {
     >
       {status}
     </span>
-  );
-}
-
-function UndoBar({ message, onUndo }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!message) {
-      setVisible(false);
-      return;
-    }
-    setVisible(true);
-    const timer = setTimeout(() => setVisible(false), 5000);
-    return () => clearTimeout(timer);
-  }, [message]);
-
-  if (!visible) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: "50%",
-        bottom: "18px",
-        transform: "translateX(-50%)",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "12px 16px",
-        borderRadius: "14px",
-        background: "white",
-        border: "1px solid #d1d5db",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
-        zIndex: 50,
-        color: "#000",
-        maxWidth: "min(92vw, 520px)",
-      }}
-    >
-      <span style={{ fontWeight: 700 }}>{message}</span>
-      <button
-        type="button"
-        onClick={onUndo}
-        style={{
-          ...secondaryButtonStyle,
-          padding: "10px 14px",
-          fontSize: "16px",
-          background: "#dbeafe",
-          border: "1px solid #93c5fd",
-        }}
-      >
-        Undo
-      </button>
-    </div>
   );
 }
 
@@ -627,27 +908,33 @@ function App() {
   const [ordersByTable, setOrdersByTable] = useState(local.current?.ordersByTable ?? INITIAL_ORDERS);
   const [receptionTab, setReceptionTab] = useState("active");
   const [barQueueState, setBarQueueState] = useState(local.current?.barQueueState ?? {});
-  const [undoMessage, setUndoMessage] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const [showMobileDrawer, setShowMobileDrawer] = useState(false);
   const [barCollapsed, setBarCollapsed] = useState(local.current?.barCollapsed ?? {});
-  const undoStackRef = useRef([]);
+  const [confirmDone, setConfirmDone] = useState({});
+  const [receptionChecklist, setReceptionChecklist] = useState(
+    local.current?.receptionChecklist ?? {}
+  );
+  const [showEditOrderModal, setShowEditOrderModal] = useState(false);
+  const [editingOrderGroup, setEditingOrderGroup] = useState(null);
+  const [editType, setEditType] = useState(null); // "table" or "room"
+  const [editValue, setEditValue] = useState("");
+  const [showTableEditModal, setShowTableEditModal] = useState(false);
+  const [showRoomEditModal, setShowRoomEditModal] = useState(false);
+  const [editingOrderInfo, setEditingOrderInfo] = useState(null); // { table, orderId, room }
+  const kitchenIdsRef = useRef(new Set());
+  const receptionChecklistRef = useRef(receptionChecklist);
+  receptionChecklistRef.current = receptionChecklist;
+  const remoteReceptionChecklist = useRef(false);
 
-  const recordUndo = (snapshot, message) => {
-    undoStackRef.current = [
-      { ordersByTable: structuredClone(snapshot), message },
-      ...undoStackRef.current,
-    ].slice(0, 8);
-    setUndoMessage(message);
-  };
-
-  const performUndo = () => {
-    const entry = undoStackRef.current.shift();
-    if (!entry) return;
-    setOrdersByTable(entry.ordersByTable);
-    setUndoMessage(undoStackRef.current[0]?.message ?? null);
+  const toggleReceptionItem = (orderId, itemName) => {
+    setReceptionChecklist((prev) => {
+      const key = `${orderId}-${itemName}`;
+      const next = { ...prev, [key]: !prev[key] };
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -838,12 +1125,27 @@ function App() {
           ...order,
           allKitchenItems: allKitchen,
           kitchenItems: visibleItems,
-          kitchenStatus: getOrderStatus(visibleItems),
+          kitchenStatus: getKitchenOrderStatus(allKitchen, visibleItems),
         };
       })
       .filter((order) => order.allKitchenItems.length > 0)
       .sort((a, b) => a.createdAt - b.createdAt);
   }, [allOrders]);
+
+  // Kitchen notification sound — play once per genuinely new ticket
+  useEffect(() => {
+    if (mode !== "kitchen") return;
+    const current = new Set(kitchenOrders.map((o) => o.id));
+    if (kitchenIdsRef.current.size > 0) {
+      for (const id of current) {
+        if (!kitchenIdsRef.current.has(id)) {
+          try { new Audio("/sounds/new-order.mp3").play(); } catch {}
+          break;
+        }
+      }
+    }
+    kitchenIdsRef.current = current;
+  }, [kitchenOrders, mode]);
 
   const kitchenStats = useMemo(() => {
     return kitchenOrders.reduce(
@@ -1022,7 +1324,6 @@ function App() {
     const orderNote = hasBarZoneLines ? draftNote.trim() : "";
 
     setOrdersByTable((prev) => {
-      recordUndo(prev, `Order saved for ${selectedRoom}`);
       const tableOrders = prev[selectedTable] || [];
       const existing = tableOrders.find(
         (order) => order.room === selectedRoom && getOrderStatus(order.items) !== "PICKED UP"
@@ -1063,9 +1364,8 @@ function App() {
     resetComposeDraft();
   };
 
-  const updateOrderItems = (table, orderId, updater, undoLabel) => {
+  const updateOrderItems = (table, orderId, updater) => {
     setOrdersByTable((prev) => {
-      if (undoLabel) recordUndo(prev, undoLabel);
       return {
         ...prev,
         [table]: (prev[table] || []).map((order) => {
@@ -1113,10 +1413,90 @@ function App() {
     setOrderItemsStatus(table, orderId, "PICKED UP");
   };
 
+  const moveOrder = (currentTable, orderIds, newTable, newRoom) => {
+    setOrdersByTable((prev) => {
+      const orders = { ...prev };
+      const moving = [];
+      orderIds.forEach((id) => {
+        const idx = (orders[currentTable] || []).findIndex((o) => o.id === id);
+        if (idx !== -1) moving.push(orders[currentTable][idx]);
+      });
+      if (moving.length === 0) return prev;
+      orders[currentTable] = (orders[currentTable] || []).filter((o) => !orderIds.includes(o.id));
+      const updated = moving.map((o) => ({ ...o, room: newRoom }));
+      orders[newTable] = [...(orders[newTable] || []), ...updated];
+      return orders;
+    });
+  };
+
   const clearAllState = () => {
     setOrdersByTable({});
     setRoomsByTable(INITIAL_ROOMS);
     setBarQueueState({});
+  };
+
+  // ── Table / Room edit handlers for bar overview badge editing ──
+
+  const openTableEditModal = (orderTable, orderId, orderRoom) => {
+    setEditingOrderInfo({ table: orderTable, orderId, room: orderRoom });
+    setShowTableEditModal(true);
+  };
+
+  const openRoomEditModal = (orderTable, orderId, orderRoom) => {
+    setEditingOrderInfo({ table: orderTable, orderId, room: orderRoom });
+    setShowRoomEditModal(true);
+  };
+
+  const handleSaveTable = (newTable) => {
+    if (!editingOrderInfo) return;
+    const { table: oldTable, orderId, room: currentRoom } = editingOrderInfo;
+
+    setOrdersByTable((prev) => {
+      const oldOrders = prev[oldTable] || [];
+      const moving = oldOrders.find((o) => o.id === orderId);
+      if (!moving) return prev;
+
+      const updated = { ...moving };
+      delete updated.table;
+
+      return {
+        ...prev,
+        [oldTable]: oldOrders.filter((o) => o.id !== orderId),
+        [newTable]: [...(prev[newTable] || []), updated],
+      };
+    });
+
+    // Ensure room exists in the new table's room list
+    setRoomsByTable((prev) => {
+      const newRooms = prev[newTable] || [];
+      if (newRooms.includes(currentRoom)) return prev;
+      return {
+        ...prev,
+        [newTable]: [...newRooms, currentRoom],
+      };
+    });
+
+    setShowTableEditModal(false);
+    setEditingOrderInfo(null);
+  };
+
+  const handleSaveRoom = (newRoom) => {
+    if (!editingOrderInfo) return;
+    const { table: orderTable, orderId } = editingOrderInfo;
+    const formattedRoom = formatRoomLabel(newRoom);
+
+    setOrdersByTable((prev) => {
+      return {
+        ...prev,
+        [orderTable]: (prev[orderTable] || []).map((order) => {
+          if (order.id !== orderId) return order;
+          return { ...order, room: formattedRoom };
+        }),
+      };
+    });
+
+    setShowRoomEditModal(false);
+    setEditingOrderInfo(null);
   };
 
   
@@ -1124,6 +1504,7 @@ if (mode === "bar" && !selectedTable) {
     // ── Mobile: vertical stack (tables first, orders scroll below) ──
     if (isMobile) {
       return (
+        <>
         <div
           style={{
             ...pageStyle,
@@ -1264,7 +1645,12 @@ if (mode === "bar" && !selectedTable) {
                             minWidth: 0,
                           }}
                         >
-                          <span
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTableEditModal(order.table, order.id, order.room);
+                            }}
                             style={{
                               padding: "4px 10px",
                               borderRadius: "8px",
@@ -1274,11 +1660,19 @@ if (mode === "bar" && !selectedTable) {
                               fontWeight: 800,
                               border: "1px solid #93c5fd",
                               whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                              lineHeight: 1.2,
                             }}
                           >
                             {order.table}
-                          </span>
-                          <span
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRoomEditModal(order.table, order.id, order.room);
+                            }}
                             style={{
                               padding: "4px 10px",
                               borderRadius: "8px",
@@ -1288,10 +1682,13 @@ if (mode === "bar" && !selectedTable) {
                               fontWeight: 700,
                               border: "1px solid #a5d6a7",
                               whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                              lineHeight: 1.2,
                             }}
                           >
                             {order.room}
-                          </span>
+                          </button>
                           <span style={{ color: "#000", fontSize: "11px", fontWeight: 400, whiteSpace: "nowrap" }}>
                             {timerFrozen ? formatElapsed(order.createdAt, order.createdAt) : formatElapsed(order.createdAt, now)}
                           </span>
@@ -1411,13 +1808,30 @@ if (mode === "bar" && !selectedTable) {
               </div>
             </div>
           </div>
-          <UndoBar message={undoMessage} onUndo={performUndo} />
+          
         </div>
+        {showTableEditModal && editingOrderInfo && (
+          <TableSelectModal
+            currentTable={editingOrderInfo.table}
+            currentRoom={editingOrderInfo.room}
+            onSave={handleSaveTable}
+            onClose={() => { setShowTableEditModal(false); setEditingOrderInfo(null); }}
+          />
+        )}
+        {showRoomEditModal && editingOrderInfo && (
+          <RoomEditModal
+            currentRoom={editingOrderInfo.room}
+            onSave={handleSaveRoom}
+            onClose={() => { setShowRoomEditModal(false); setEditingOrderInfo(null); }}
+          />
+        )}
+        </>
       );
     }
 
     // ── Desktop bar home layout (unchanged) ──
     return (
+      <>
       <div
         style={{
           ...pageStyle,
@@ -1567,7 +1981,12 @@ if (mode === "bar" && !selectedTable) {
                             minWidth: 0,
                           }}
                         >
-                          <span
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openTableEditModal(order.table, order.id, order.room);
+                            }}
                             style={{
                               padding: "5px 12px",
                               borderRadius: "8px",
@@ -1577,11 +1996,19 @@ if (mode === "bar" && !selectedTable) {
                               fontWeight: 800,
                               border: "1px solid #93c5fd",
                               whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                              lineHeight: 1.2,
                             }}
                           >
                             {order.table}
-                          </span>
-                          <span
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRoomEditModal(order.table, order.id, order.room);
+                            }}
                             style={{
                               padding: "5px 12px",
                               borderRadius: "8px",
@@ -1591,10 +2018,13 @@ if (mode === "bar" && !selectedTable) {
                               fontWeight: 700,
                               border: "1px solid #a5d6a7",
                               whiteSpace: "nowrap",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                              lineHeight: 1.2,
                             }}
                           >
                             {order.room}
-                          </span>
+                          </button>
                           <span style={{ color: "#000", fontSize: "12px", fontWeight: 400, whiteSpace: "nowrap" }}>
                             {formatElapsed(order.createdAt, now)}
                           </span>
@@ -1713,8 +2143,24 @@ if (mode === "bar" && !selectedTable) {
             </div>
           </aside>
         </div>
-        <UndoBar message={undoMessage} onUndo={performUndo} />
+        
       </div>
+        {showTableEditModal && editingOrderInfo && (
+          <TableSelectModal
+            currentTable={editingOrderInfo.table}
+            currentRoom={editingOrderInfo.room}
+            onSave={handleSaveTable}
+            onClose={() => { setShowTableEditModal(false); setEditingOrderInfo(null); }}
+          />
+        )}
+        {showRoomEditModal && editingOrderInfo && (
+          <RoomEditModal
+            currentRoom={editingOrderInfo.room}
+            onSave={handleSaveRoom}
+            onClose={() => { setShowRoomEditModal(false); setEditingOrderInfo(null); }}
+          />
+        )}
+      </>
     );
   }
 
@@ -1902,7 +2348,7 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
           </button>
         </div>
         {showAddRoomModal && <AddRoomModal onClose={() => setShowAddRoomModal(false)} onConfirm={confirmAddRoom} />}
-        <UndoBar message={undoMessage} onUndo={performUndo} />
+        
       </div>
     );
   }
@@ -2210,7 +2656,7 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
             ))}
           </div>
 
-            <UndoBar message={undoMessage} onUndo={performUndo} />
+            
           </div>
 
           {/* Fixed bottom bar — outside overflow:hidden container so position:fixed works reliably on all browsers */}
@@ -2722,7 +3168,7 @@ if (mode === "bar" && selectedTable && tableStage === "overview") {
           </aside>
         </div>
 
-        <UndoBar message={undoMessage} onUndo={performUndo} />
+        
       </div>
     );
   }
@@ -2838,6 +3284,15 @@ if (mode === "kitchen") {
                     padding: "12px",
                     border: "1px solid #d1d5db",
                     borderLeft: `6px solid ${getStatusColors(orderStatus).background}`,
+                    background: orderStatus === "NEW"
+                      ? "rgba(239,68,68,0.06)"
+                      : orderStatus === "IN PREPARATION"
+                        ? "rgba(249,115,22,0.06)"
+                        : orderStatus === "READY"
+                          ? "rgba(34,197,94,0.06)"
+                          : orderStatus === "PICKED"
+                            ? "#e5e7eb"
+                            : "white",
                   }}
                 >
                   <div
@@ -2878,11 +3333,11 @@ if (mode === "kitchen") {
                             padding: "10px",
                             background:
                               item.status === "NEW"
-                                ? "#f8fbff"
+                                ? "rgba(239,68,68,0.08)"
                                 : item.status === "IN PREPARATION"
-                                  ? "#fff8e6"
+                                  ? "rgba(249,115,22,0.08)"
                                   : item.status === "READY"
-                                    ? "#f0fff0"
+                                    ? "rgba(34,197,94,0.08)"
                                     : item.status === "PICKED"
                                       ? "#e5e7eb"
                                       : "#f3f4f6",
@@ -2953,19 +3408,33 @@ if (mode === "kitchen") {
                     </button>
 
                     <button
-                      onClick={() => setOrderItemsStatus(order.table, order.id, "PICKED UP", "kitchen")}
+                      onClick={() => {
+                        const key = `${order.table}-${order.id}`;
+                        if (confirmDone[key]) {
+                          setConfirmDone((prev) => ({ ...prev, [key]: false }));
+                          setOrderItemsStatus(order.table, order.id, "PICKED UP", "kitchen");
+                        } else {
+                          setConfirmDone((prev) => ({ ...prev, [key]: true }));
+                          setTimeout(() => {
+                            setConfirmDone((prev) => {
+                              if (prev[key]) return { ...prev, [key]: false };
+                              return prev;
+                            });
+                          }, 5000);
+                        }
+                      }}
                       style={{
                         padding: "8px 10px",
                         borderRadius: "10px",
-                        border: "1px solid #d1d5db",
-                        background: "#e5e7eb",
-                        color: "#000",
+                        border: confirmDone[`${order.table}-${order.id}`] ? "1px solid #fca5a5" : "1px solid #d1d5db",
+                        background: confirmDone[`${order.table}-${order.id}`] ? "#fef2f2" : "#e5e7eb",
+                        color: confirmDone[`${order.table}-${order.id}`] ? "#991b1b" : "#000",
                         cursor: "pointer",
                         fontWeight: 800,
                         fontSize: "13px",
                       }}
                     >
-                      Mark all DONE
+                      {confirmDone[`${order.table}-${order.id}`] ? "Click to confirm" : "Mark all DONE"}
                     </button>
                   </div>
                 </div>
@@ -2973,7 +3442,7 @@ if (mode === "kitchen") {
             })
           )}
         </div>
-        <UndoBar message={undoMessage} onUndo={performUndo} />
+        
       </div>
     );
   }
@@ -2996,119 +3465,129 @@ if (mode === "reception") {
               No orders in this view
             </div>
           ) : (
-            receptionOrders.map((order) => {
-              const orderStatus = getOrderStatus(order.items);
-              const statusColors = getStatusColors(orderStatus);
+            (() => {
+              // Group orders by table + room — each group becomes one card
+              const groups = {};
+              receptionOrders.forEach((order) => {
+                const key = `${order.table}-${order.room}`;
+                if (!groups[key]) {
+                  groups[key] = { table: order.table, room: order.room, orders: [] };
+                }
+                groups[key].orders.push(order);
+              });
 
-              return (
-                <div
-                  key={`${order.table}-${order.id}`}
-                  className="reception-card"
-                  style={{
-                    ...cardStyle,
-                    border: "1px solid #d1d5db",
-                    borderTop: `4px solid ${statusColors.background}`,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                    minWidth: 0,
-                    minHeight: 0,
-                  }}
-                >
+              return Object.values(groups).map((group) => {
+                // Sort orders within group chronologically
+                const sorted = group.orders.sort((a, b) => a.createdAt - b.createdAt);
+
+                // Merge all items from all orders in the group, preserving order
+                const allItems = sorted.flatMap((order) =>
+                  order.items.map((item) => ({
+                    ...item,
+                    orderId: order.id,
+                    _createdAt: order.createdAt,
+                  }))
+                );
+
+                // Find earliest creation time
+                const firstCreatedAt = sorted[0].createdAt;
+
+                return (
                   <div
+                    key={group.table + group.room}
+                    className="reception-card"
                     style={{
+                      ...cardStyle,
+                      border: "1px solid #d1d5db",
                       display: "flex",
-                      justifyContent: "space-between",
+                      flexDirection: "column",
                       gap: "8px",
-                      alignItems: "flex-start",
+                      minWidth: 0,
+                      minHeight: 0,
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: "clamp(13px, 1.4vw, 18px)",
-                          fontWeight: 800,
-                          color: "#000",
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {order.room} • Table {order.table}
-                      </div>
-                      <div
-                        style={{
-                          color: "#555",
-                          marginTop: "2px",
-                          fontSize: "clamp(11px, 1vw, 13px)",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {formatElapsed(order.createdAt, now)}
-                      </div>
-                    </div>
-
-                    <StatusBadge status={orderStatus} />
-                  </div>
-
-                  <div
-                    className="reception-card-items"
-                    style={{
-                      padding: "10px",
-                      background: "#fafafa",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "10px",
-                      color: "#000",
-                    }}
-                  >
-                    {order.items.map((item) => (
-                      <div
-                        key={`${order.id}-${item.name}`}
-                        style={{
-                          fontSize: "clamp(13px, 1.2vw, 15px)",
-                          lineHeight: 1.45,
-                          marginBottom: "3px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 800 }}>{item.qty}x </span>
-                        <span>{item.name}</span>
-                        {(item.extras || []).map((extra) => (
-                          <span key={extra} style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px", fontWeight: 600 }}>
-                            * {extra}
-                          </span>
-                        ))}
-                        {item.note ? (
-                          <span style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px" }}>
-                            Note: {item.note}
-                          </span>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-
-                  {order.note ? (
                     <div
                       style={{
-                        padding: "6px 10px",
-                        background: "#f3f4f6",
-                        borderRadius: "8px",
-                        color: "#000",
-                        fontSize: "clamp(11px, 1vw, 13px)",
-                        fontWeight: 600,
-                        lineHeight: 1.3,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                        alignItems: "flex-start",
                       }}
                     >
-                      {order.note}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "clamp(13px, 1.4vw, 18px)",
+                            fontWeight: 800,
+                            color: "#000",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {group.room} • Table {group.table}
+                        </div>
+                        <div
+                          style={{
+                            color: "#555",
+                            marginTop: "2px",
+                            fontSize: "clamp(11px, 1vw, 13px)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {formatElapsed(firstCreatedAt, now)}
+                        </div>
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              );
-            })
+
+                    <div
+                      className="reception-card-items"
+                      style={{
+                        padding: "10px",
+                        background: "#fafafa",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "10px",
+                        color: "#000",
+                      }}
+                    >
+                      {allItems.map((item, idx) => {
+                        const checklistKey = `${item.orderId}-${item.name}`;
+                        const isChecked = receptionChecklist[checklistKey];
+                        return (
+                          <div
+                            key={`${item.orderId}-${item.name}-${idx}`}
+                            onClick={() => toggleReceptionItem(item.orderId, item.name)}
+                            style={{
+                              fontSize: "clamp(13px, 1.2vw, 15px)",
+                              lineHeight: 1.45,
+                              marginBottom: "3px",
+                              cursor: "pointer",
+                              textDecoration: isChecked ? "line-through" : "none",
+                              opacity: isChecked ? 0.55 : 1,
+                              userSelect: "none",
+                            }}
+                          >
+                            <span style={{ fontWeight: 800 }}>{item.qty}x </span>
+                            <span>{item.name}</span>
+                            {(item.extras || []).map((extra) => (
+                              <span key={extra} style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px", fontWeight: 600 }}>
+                                * {extra}
+                              </span>
+                            ))}
+                            {item.note ? (
+                              <span style={{ fontSize: "clamp(11px, 1vw, 13px)", color: "#555", display: "block", paddingLeft: "14px" }}>
+                                Note: {item.note}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()
           )}
         </div>
-        <UndoBar message={undoMessage} onUndo={performUndo} />
+        
       </div>
     );
   }

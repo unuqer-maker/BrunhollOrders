@@ -22,6 +22,7 @@ import {
   linesToOrderItems,
   mergeOrderItems,
 } from "./orderDraft.js";
+import { initMenuFromGoogleSheets } from "./menu.js";
 import {
   loadLocalState,
   saveLocalState,
@@ -948,6 +949,9 @@ function App() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Load menu from Google Sheets on app start (falls back to local menu.json)
+  useEffect(() => { initMenuFromGoogleSheets(); }, []);
 
   // Refs holding latest state for snapshot comparison (no stale closures)
   const ordersRef = useRef(ordersByTable);

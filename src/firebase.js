@@ -5,7 +5,6 @@ import {
   setDoc,
   onSnapshot,
   serverTimestamp,
-  enableIndexedDbPersistence,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -19,14 +18,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-try {
-  enableIndexedDbPersistence(db).catch(() => {
-    // Offline persistence not available — online-only mode
-  });
-} catch {
-  // Browser doesn't support IndexedDB persistence
-}
 
 export const STATE_COLLECTION = "state";
 export const ORDER_DOC = "orders";
@@ -60,7 +51,6 @@ export async function saveState(name, data) {
       },
       { merge: true }
     );
-    console.log(`[FIRESTORE] saveState(${name}) succeeded`);
   } catch (err) {
     console.error(`[FIRESTORE] saveState(${name}) failed:`, err);
   }
@@ -74,11 +64,9 @@ export async function saveState(name, data) {
  * @returns {() => void} unsubscribe function
  */
 export function subscribeState(name, callback) {
-  console.log(`[FIRESTORE] subscribeState(${name}) attaching listener`);
   return onSnapshot(
     stateDoc(name),
     (snap) => {
-      console.log(`[SNAPSHOT] ${name}`, snap.exists() ? snap.data() : "no document");
       if (snap.exists()) {
         const data = snap.data();
         const { updatedAt, ...state } = data;
@@ -91,42 +79,4 @@ export function subscribeState(name, callback) {
       console.error(`[FIRESTORE] subscribeState(${name}) error:`, err);
     }
   );
-}
-
-// ── localStorage cache ──────────────────────────────────────────────
-
-const STORAGE_KEY = "brunholl_v1";
-
-export function loadLocalState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (data.version !== 1) return null;
-    return {
-      ordersByTable: data.ordersByTable || {},
-      roomsByTable: data.roomsByTable || {},
-      barQueueState: data.barQueueState || {},
-    };
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
-}
-
-export function saveLocalState(ordersByTable, roomsByTable, barQueueState) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        version: 1,
-        savedAt: new Date().toISOString(),
-        ordersByTable,
-        roomsByTable,
-        barQueueState,
-      })
-    );
-  } catch {
-    // Storage full or unavailable
-  }
 }

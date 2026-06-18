@@ -1379,13 +1379,13 @@ function App() {
     });
   };
 
-  const cycleLineStatus = (table, orderId, itemName) => {
+  const cycleLineStatus = (table, orderId, lineId) => {
     updateOrderItems(
       table,
       orderId,
       (items) =>
         items.map((item) => {
-          if (item.name !== itemName) return item;
+          if (item.lineId !== lineId) return item;
           return { ...item, status: getNextStatus(item.status) };
         }),
       "Status updated"
@@ -3323,7 +3323,7 @@ if (mode === "kitchen") {
                       return (
                         <button
                           key={`${order.id}-${item.name}-${index}`}
-                          onClick={() => cycleLineStatus(order.table, order.id, item.name)}
+                          onClick={() => cycleLineStatus(order.table, order.id, item.lineId)}
                           style={{
                             border: "1px solid #d1d5db",
                             width: "100%",

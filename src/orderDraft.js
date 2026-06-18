@@ -41,6 +41,8 @@ export function draftTotalItems(lines) {
   return lines.reduce((sum, line) => sum + line.qty, 0);
 }
 
+let _lineCounter = 0;
+
 export function linesToOrderItems(lines) {
   return lines.map((line) => ({
     id: line.id,
@@ -49,6 +51,7 @@ export function linesToOrderItems(lines) {
     status: "NEW",
     extras: line.extras?.length ? [...line.extras] : null,
     note: line.note || null,
+    lineId: `line-${Date.now()}-${++_lineCounter}`,
   }));
 }
 
@@ -57,7 +60,9 @@ export function mergeOrderItems(existingItems, addedItems) {
 
   addedItems.forEach((added) => {
     const key = lineKey(added);
-    const match = merged.find((item) => lineKey(item) === key && item.status !== "PICKED UP");
+    // Only merge into existing items that are still in status "NEW"
+    // Items that are IN PREP, RDY, or PICKED must keep their qty separate
+    const match = merged.find((item) => lineKey(item) === key && item.status === "NEW");
     if (match) {
       match.qty += added.qty;
     } else {

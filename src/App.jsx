@@ -956,6 +956,14 @@ function App() {
   roomsRef.current = roomsByTable;
   barQueueRef.current = barQueueState;
 
+  // ── Synchronization gate ──
+  // syncReady starts false. All 3 Firestore subscriptions must receive their
+  // first snapshot before any saveState() call is allowed.
+  // This prevents a newly connected device from overwriting Firestore with
+  // its initial empty React state.
+  const syncReady = useRef(false);
+  const snapshotCount = useRef(0);
+
   // Flags: true when the latest state change was from a remote snapshot (not local).
   // The write effect skips saving to Firestore when this is set — prevents echo writes.
   const remoteOrders = useRef(false);
@@ -963,24 +971,34 @@ function App() {
   const remoteBarQueue = useRef(false);
 
   // Push local state changes to Firestore — skip writes triggered by remote snapshots.
+  // BLOCK ALL writes until the synchronization gate opens.
   useEffect(() => {
+    if (!syncReady.current) return;
     if (remoteOrders.current) { remoteOrders.current = false; return; }
     saveState("orders", { ordersByTable });
   }, [ordersByTable]);
 
   useEffect(() => {
+    if (!syncReady.current) return;
     if (remoteRooms.current) { remoteRooms.current = false; return; }
     saveState("rooms", { roomsByTable });
   }, [roomsByTable]);
 
   useEffect(() => {
+    if (!syncReady.current) return;
     if (remoteBarQueue.current) { remoteBarQueue.current = false; return; }
     saveState("barQueue", { barQueueState });
   }, [barQueueState]);
 
   // Subscribe to Firestore — on incoming snapshot, update local state.
+  // Each subscription increments snapshotCount on its first call.
+  // When all 3 have fired, the write gate opens.
   useEffect(() => {
     const unsub = subscribeState("orders", (data) => {
+      if (snapshotCount.current < 3) {
+        snapshotCount.current += 1;
+        if (snapshotCount.current >= 3) syncReady.current = true;
+      }
       if (data?.ordersByTable) {
         const current = JSON.stringify(ordersRef.current);
         const incoming = JSON.stringify(data.ordersByTable);
@@ -995,6 +1013,10 @@ function App() {
 
   useEffect(() => {
     const unsub = subscribeState("rooms", (data) => {
+      if (snapshotCount.current < 3) {
+        snapshotCount.current += 1;
+        if (snapshotCount.current >= 3) syncReady.current = true;
+      }
       if (data?.roomsByTable) {
         const current = JSON.stringify(roomsRef.current);
         const incoming = JSON.stringify(data.roomsByTable);
@@ -1009,6 +1031,10 @@ function App() {
 
   useEffect(() => {
     const unsub = subscribeState("barQueue", (data) => {
+      if (snapshotCount.current < 3) {
+        snapshotCount.current += 1;
+        if (snapshotCount.current >= 3) syncReady.current = true;
+      }
       if (data?.barQueueState) {
         const current = JSON.stringify(barQueueRef.current);
         const incoming = JSON.stringify(data.barQueueState);

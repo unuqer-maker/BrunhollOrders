@@ -966,31 +966,58 @@ function App() {
   const remoteOrders = useRef(false);
   const remoteRooms = useRef(false);
   const remoteBarQueue = useRef(false);
+  const initialFirestoreSync = useRef({ orders: false, rooms: false, barQueue: false });
+  const initialWriteSkipped = useRef({ orders: false, rooms: false, barQueue: false });
 
   // Sync to localStorage cache whenever state changes
   useEffect(() => {
     saveLocalState(ordersByTable, roomsByTable, barQueueState);
   }, [ordersByTable, roomsByTable, barQueueState]);
 
-  // Push to Firestore whenever state changes — skip remote-originated changes
+  // Push to Firestore whenever state changes — skip remote-originated changes.
+  // IMPORTANT: Skip all writes until the first remote snapshot is received.
+  // This prevents old localStorage data from overwriting Firestore on startup.
   useEffect(() => {
     if (remoteOrders.current) { remoteOrders.current = false; return; }
+    if (!initialFirestoreSync.current.orders) {
+      if (!initialWriteSkipped.current.orders) {
+        initialWriteSkipped.current.orders = true;
+      }
+      return;
+    }
     saveState("orders", { ordersByTable });
   }, [ordersByTable]);
 
   useEffect(() => {
     if (remoteRooms.current) { remoteRooms.current = false; return; }
+    if (!initialFirestoreSync.current.rooms) {
+      if (!initialWriteSkipped.current.rooms) {
+        initialWriteSkipped.current.rooms = true;
+      }
+      return;
+    }
     saveState("rooms", { roomsByTable });
   }, [roomsByTable]);
 
   useEffect(() => {
     if (remoteBarQueue.current) { remoteBarQueue.current = false; return; }
+    if (!initialFirestoreSync.current.barQueue) {
+      if (!initialWriteSkipped.current.barQueue) {
+        initialWriteSkipped.current.barQueue = true;
+      }
+      return;
+    }
     saveState("barQueue", { barQueueState });
   }, [barQueueState]);
 
-  // Subscribe to Firestore realtime updates — set remote flag on incoming changes
+  // Subscribe to Firestore realtime updates — set remote flag on incoming changes.
+  // On the very first remote snapshot for each collection, mark initial sync as
+  // received so the write effects above can proceed.
   useEffect(() => {
     const unsub = subscribeState("orders", (data) => {
+      if (!initialFirestoreSync.current.orders) {
+        initialFirestoreSync.current.orders = true;
+      }
       if (data?.ordersByTable) {
         const current = JSON.stringify(ordersRef.current);
         const incoming = JSON.stringify(data.ordersByTable);
@@ -1005,6 +1032,9 @@ function App() {
 
   useEffect(() => {
     const unsub = subscribeState("rooms", (data) => {
+      if (!initialFirestoreSync.current.rooms) {
+        initialFirestoreSync.current.rooms = true;
+      }
       if (data?.roomsByTable) {
         const current = JSON.stringify(roomsRef.current);
         const incoming = JSON.stringify(data.roomsByTable);
@@ -1019,6 +1049,9 @@ function App() {
 
   useEffect(() => {
     const unsub = subscribeState("barQueue", (data) => {
+      if (!initialFirestoreSync.current.barQueue) {
+        initialFirestoreSync.current.barQueue = true;
+      }
       if (data?.barQueueState) {
         const current = JSON.stringify(barQueueRef.current);
         const incoming = JSON.stringify(data.barQueueState);
